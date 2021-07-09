@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 * Added the `getAuthorizationURL` method to get the authorization URL without the redirect
+* Allow to turn off signature verification
 
 ## [1.1.2]
 
