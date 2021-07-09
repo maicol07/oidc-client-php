@@ -133,12 +133,6 @@ class OpenIDConnectClient
      * @var bool Verify peer hostname on transactions
      */
     private $verifyHost = true;
-    
-    /**
-     * @var bool Verify JWT signature
-     *
-     */
-    public  $verifySignature = true;
 
     /**
      * @var string if we acquire an access token it will be stored here
@@ -1589,7 +1583,7 @@ class OpenIDConnectClient
      * @return bool
      */
     public function canVerifySignatures() {
-        return (class_exists('\phpseclib\Crypt\RSA') || class_exists('Crypt_RSA')) and ($this->verifySignature);
+        return class_exists('\phpseclib\Crypt\RSA') || class_exists('Crypt_RSA');
     }
 
     /**
