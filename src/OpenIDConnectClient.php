@@ -662,14 +662,13 @@ class OpenIDConnectClient
         };
     }
 
-    /**
-     * Start Here
-     * @return void
-     * @throws OpenIDConnectClientException
-     */
-    private function requestAuthorization() {
-
-        $auth_endpoint = $this->getProviderConfigValue('authorization_endpoint');
+   /**
+    * Get the authorization URL
+    *
+    * @return string
+    */
+   public function getAuthorizationURL() {
+	$auth_endpoint = $this->getProviderConfigValue('authorization_endpoint');
         $response_type = 'code';
 
         // State essentially acts as a session key for OIDC
@@ -714,6 +713,16 @@ class OpenIDConnectClient
         }
 
         $auth_endpoint .= (strpos($auth_endpoint, '?') === false ? '?' : '&') . http_build_query($auth_params, '', '&', $this->encType);
+	return $auth_endpoint;
+   }
+
+    /**
+     * Start Here
+     * @return void
+     * @throws OpenIDConnectClientException
+     */
+    private function requestAuthorization() {
+        $auth_endpoint = $this->getAuthorizationURL();
 
         $this->commitSession();
         $this->redirect($auth_endpoint);
