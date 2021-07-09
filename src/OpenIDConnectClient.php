@@ -357,9 +357,6 @@ class OpenIDConnectClient
 
             // Verify the signature
             if ($this->canVerifySignatures()) {
-                if (!$this->getProviderConfigValue('jwks_uri')) {
-                    throw new OpenIDConnectClientException ('Unable to verify signature due to no jwks_uri being defined');
-                }
                 if (!$this->verifyJWTsignature($token_json->id_token)) {
                     throw new OpenIDConnectClientException ('Unable to verify signature');
                 }
@@ -1036,6 +1033,9 @@ class OpenIDConnectClient
                 $hashtype = 'sha' . substr($header->alg, 2);
                 $signatureType = $header->alg === 'PS256' ? 'PSS' : '';
                 
+                if (!$this->getProviderConfigValue('jwks_uri')) {
+                    throw new OpenIDConnectClientException ('Unable to verify signature due to no jwks_uri being defined');
+                }
                 $jwks = json_decode($this->fetchURL($this->getProviderConfigValue('jwks_uri')));
                 if ($jwks === NULL) {
                     throw new OpenIDConnectClientException('Error decoding JSON from jwks_uri');
