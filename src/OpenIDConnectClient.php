@@ -1031,10 +1031,6 @@ class OpenIDConnectClient
             throw new OpenIDConnectClientException('Error decoding JSON from token header');
         }
         $payload = implode('.', $parts);
-        $jwks = json_decode($this->fetchURL($this->getProviderConfigValue('jwks_uri')));
-        if ($jwks === NULL) {
-            throw new OpenIDConnectClientException('Error decoding JSON from jwks_uri');
-        }
         if (!isset($header->alg)) {
             throw new OpenIDConnectClientException('Error missing signature type in token header');
         }
@@ -1045,6 +1041,11 @@ class OpenIDConnectClient
             case 'RS512':
                 $hashtype = 'sha' . substr($header->alg, 2);
                 $signatureType = $header->alg === 'PS256' ? 'PSS' : '';
+                
+                $jwks = json_decode($this->fetchURL($this->getProviderConfigValue('jwks_uri')));
+                if ($jwks === NULL) {
+                    throw new OpenIDConnectClientException('Error decoding JSON from jwks_uri');
+                }
 
                 $verified = $this->verifyRSAJWTsignature($hashtype,
                     $this->getKeyForHeader($jwks->keys, $header),
