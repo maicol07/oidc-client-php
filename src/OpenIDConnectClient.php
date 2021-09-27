@@ -19,10 +19,10 @@
  * under the License.
  *
  * ------------------
- * 
+ *
  * This file was changed by Julius Cordes, 2020-2021.
  * For details see git history.
- * 
+ *
  */
 
 namespace JuliusPC;
@@ -190,8 +190,8 @@ class OpenIDConnectClient
     private $wellKnown = false;
 
     /**
-     * @var mixed holds well-known opendid configuration parameters, like policy for MS Azure AD B2C User Flow  
-     * @see https://docs.microsoft.com/en-us/azure/active-directory-b2c/user-flow-overview 
+     * @var mixed holds well-known opendid configuration parameters, like policy for MS Azure AD B2C User Flow
+     * @see https://docs.microsoft.com/en-us/azure/active-directory-b2c/user-flow-overview
      */
     private $wellKnownConfigParameters = [];
 
@@ -571,7 +571,7 @@ class OpenIDConnectClient
     }
 
     /**
-     * Set optionnal parameters for .well-known/openid-configuration 
+     * Set optionnal parameters for .well-known/openid-configuration
      *
      * @param string $param
      *
@@ -635,7 +635,7 @@ class OpenIDConnectClient
                 ?: @$_SERVER['SERVER_ADDR'];
 
         $port = (443 === $port) || (80 === $port) ? '' : ':' . $port;
-	    
+
 	$uriSplit = explode("?", $_SERVER['REQUEST_URI']);
 
         return sprintf('%s://%s%s/%s', $protocol, $host, $port, @trim(reset($uriSplit), '/'));
@@ -727,7 +727,7 @@ class OpenIDConnectClient
 
     /**
      * Requests an access token with the client credentials grant. This grant is not covered by OpenID Connect.
-     * 
+     *
      * @link https://tools.ietf.org/html/rfc6749#section-4.4
      *
      * @throws OpenIDConnectClientException
@@ -765,7 +765,7 @@ class OpenIDConnectClient
      * This grant will be obsoleted with the upcoming OAuth 2.1 standard. This grant is not covered by OpenID Connect.
      *
      * @link https://tools.ietf.org/html/rfc6749#section-4.3
-     * 
+     *
      * @param boolean $bClientAuth Indicates that the Client ID and Secret be used for client authentication
      * @return mixed
      * @throws OpenIDConnectClientException
@@ -1032,7 +1032,7 @@ class OpenIDConnectClient
             case 'RS512':
                 $hashtype = 'sha' . substr($header->alg, 2);
                 $signatureType = $header->alg === 'PS256' ? 'PSS' : '';
-                
+
                 if (!$this->getProviderConfigValue('jwks_uri')) {
                     throw new OpenIDConnectClientException ('Unable to verify signature due to no jwks_uri being defined');
                 }
@@ -1390,7 +1390,7 @@ class OpenIDConnectClient
     }
 
     /**
-     * @return bool 
+     * @return bool
      */
     public function getHttpUpgradeInsecureRequests()
     {
@@ -1410,7 +1410,7 @@ class OpenIDConnectClient
 
     /**
      * Enables the implicit flow. In most cases you only need the authorization code grant, which is enabled by default.
-     * 
+     *
      * @param bool $allowImplicitFlow
      */
     public function setAllowImplicitFlow($allowImplicitFlow) {
@@ -1492,7 +1492,7 @@ class OpenIDConnectClient
 
     /**
      * Introspect a given token - either access token or refresh token.
-     * 
+     *
      * @link https://tools.ietf.org/html/rfc7662
      *
      * @param string $token
@@ -1901,14 +1901,14 @@ class OpenIDConnectClient
                 $method = 'plain';
             }
         }
-            
+
         return $method;
     }
 
     /**
      * This method allows you to enforce a specific PKCE code challenge method.
      * Useful in cases where your OP supports PKCE but does not announce it in his discovery document.
-     * 
+     *
      * @param string $codeChallengeMethod
      */
     public function setCodeChallengeMethod($codeChallengeMethod) {
@@ -1919,7 +1919,7 @@ class OpenIDConnectClient
      * This method allows you to disable nonce setting and checking.
      * Some OPs seem to have problems with nonces. This behaviour is not compliant to the OIDC spec.
      * Disable it only in case you know what you are doing.
-     * 
+     *
      * @param bool $disableNonce
      */
     public function setUnsafeDisableNonce($disableNonce) {
