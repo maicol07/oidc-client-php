@@ -1933,10 +1933,14 @@ class OpenIDConnectClient
         return $this->unsafeDisableNonce;
     }
 
+    public function getUnsafeDisablePkce() {
+        return $this->unsafeDisablePkce;
+    }
+
     /**
      * @param bool $disablePkce true to disable use of PKCE
      */
-    public function setUnsafeDisablePkce() {
-        return $this->unsafeDisablePkce;
+    public function setUnsafeDisablePkce($disablePkce) {
+        $this->unsafeDisablePkce = $disablePkce;
     }
 }
