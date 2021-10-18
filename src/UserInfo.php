@@ -9,6 +9,8 @@ namespace Maicol07\OIDCClient;
 use Illuminate\Support\Collection;
 
 /**
+ * OIDC Claims
+ * ---
  * @property-read string $sub Subject — Identifier for the End-User at the Issuer.
  * @property-read string $name End-User's full name in displayable form including all name parts, possibly including titles and suffixes, ordered according to the End-User's locale and preferences.
  * @property-read string $given_name Given name(s) or first name(s) of the End-User. Note that in some cultures, people can have multiple given names; all can be present, with the names being separated by space characters.
@@ -29,6 +31,10 @@ use Illuminate\Support\Collection;
  * @property-read bool $phone_number_verified  True if the End-User's phone number has been verified; otherwise false. When this Claim Value is true, this means that the OP took affirmative steps to ensure that this phone number was controlled by the End-User at the time the verification was performed. The means by which a phone number is verified is context-specific, and dependent upon the trust framework or contractual agreements within which the parties are operating. When true, the phone_number Claim MUST be in E.164 format and any extensions MUST be represented in RFC 3966 format.
  * @property-read array{formatted: string, street_address: string, locality: string, region: string, postal_code: int, country: string} $address End-User's preferred postal address. The value of the address member is a JSON [RFC4627] structure containing some or all of the members defined in Section 5.1.1.
  * @property-read int $updated_at  Time the End-User's information was last updated. Its value is a JSON number representing the number of seconds from 1970-01-01T0:0:0Z as measured in UTC until the date/time.
+ *
+ * Custom items
+ * ---
+ * @property-read string $id_token ID Token returned from the token request (requested for this user)
  */
 class UserInfo
 {

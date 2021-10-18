@@ -466,7 +466,7 @@ class OIDCClient
             throw new OpenIDConnectClientException('The communication to retrieve user data has failed with status code ' . $response->body());
         }
 
-        return new UserInfo($response->collect());
+        return new UserInfo($response->collect()->put('id_token', $this->id_token));
     }
 
     #[NoReturn]
