@@ -217,7 +217,7 @@ class Client
                 throw new ClientException('User did not authorize openid scope.');
             }
 
-            if (Session::get('oidc_nonce') !== $request->get('nonce')) {
+            if ($this->enable_nonce && Session::get('oidc_nonce') !== $request->get('nonce')) {
                 throw new ClientException("Generated nonce is not equal to the one returned by the server.");
             }
             Session::remove('oidc_nonce');
