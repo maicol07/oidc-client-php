@@ -256,7 +256,7 @@ class Client
             // Save the id token
             $this->id_token = $id_token;
 
-            if ($request->get('nonce') === Session::get('oidc_nonce')) {
+            if ($this->send_nonce && $request->get('nonce') === Session::get('oidc_nonce')) {
                 return true;
             }
             Session::remove('oidc_nonce');
