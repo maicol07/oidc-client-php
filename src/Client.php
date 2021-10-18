@@ -40,7 +40,7 @@ class Client
     private string $client_secret;
     private ?string $issuer;
     private string $access_token;
-    private string $refresh_token;
+    private ?string $refresh_token;
     private string $id_token;
     private array $scopes;
     private array $response_types;
