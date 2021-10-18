@@ -56,7 +56,7 @@ class Client
     private string $code_challenge_method;
     private array $pkce_algorithms = ['S256' => 'sha256', 'plain' => false];
     private bool $enable_pkce;
-    private bool $send_nonce;
+    private bool $enable_nonce;
 
     private PendingRequest $http_client;
 
@@ -88,7 +88,7 @@ class Client
         'verify' => '?bool',
         'scopes' => '?array',
         'enable_pkce' => '?bool',
-        'send_nonce' => '?bool',
+        'enable_nonce' => '?bool',
         'allow_implicit_flow' => '?bool',
         'code_challenge_method' => '?string',
         'timeout' => '?int',
@@ -136,7 +136,7 @@ class Client
             'issuer' => $provider_url,
             'scopes' => [],
             'enable_pkce' => true,
-            'send_nonce' => true,
+            'enable_nonce' => true,
             'allow_implicit_flow' => false,
             'code_challenge_method' => 'plain',
             'leeway' => 300,
@@ -256,7 +256,7 @@ class Client
             // Save the id token
             $this->id_token = $id_token;
 
-            if ($this->send_nonce && $request->get('nonce') === Session::get('oidc_nonce')) {
+            if ($this->enable_nonce && $request->get('nonce') === Session::get('oidc_nonce')) {
                 return true;
             }
             Session::remove('oidc_nonce');
@@ -317,7 +317,7 @@ class Client
             'scope' => implode(' ', array_merge($this->scopes, ['openid']))
         ])->merge($query_params);
 
-        if ($this->send_nonce) {
+        if ($this->enable_nonce) {
             $nonce = Str::random();
             Session::set('oidc_nonce', $nonce);
             $params->put('nonce', $nonce);
