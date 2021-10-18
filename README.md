@@ -1,10 +1,13 @@
 PHP OpenID Connect Basic Client
 ========================
-A simple library that allows an application to authenticate a user through the basic OpenID Connect flow.
-This library hopes to encourage OpenID Connect use by making it simple enough for a developer with little knowledge of
-the OpenID Connect protocol to setup authentication.
+A simple library that allows an application to authenticate a user through the basic OpenID Connect flow. This library
+hopes to encourage OpenID Connect use by making it simple enough for a developer with little knowledge of the OpenID
+Connect protocol to setup authentication.
 
-This library is a fork of [jumbojett/OpenID-Connect-PHP](https://github.com/jumbojett/OpenID-Connect-PHP), which seems to be discontinued. For progress being made on fixing bugs of the original library [see this wiki page](https://github.com/JuliusPC/OpenID-Connect-PHP/wiki/Progress-on-fixing-upstream-issues).
+This library is a heavenly modified fork
+of [jumbojett/OpenID-Connect-PHP](https://github.com/jumbojett/OpenID-Connect-PHP), which seems to be discontinued. For
+progress being made on fixing bugs of the original
+library [see this wiki page](https://github.com/JuliusPC/OpenID-Connect-PHP/wiki/Progress-on-fixing-upstream-issues).
 
 # Supported Specifications #
 
@@ -19,23 +22,32 @@ This library is a fork of [jumbojett/OpenID-Connect-PHP](https://github.com/jumb
 - [Draft: OAuth 2.0 Authorization Server Issuer Identifier in Authorization Response](https://tools.ietf.org/html/draft-ietf-oauth-iss-auth-resp-00)
 
 # Requirements #
- 1. PHP 5.4 or greater
- 2. CURL extension
+
+1. PHP 8.0+
+2. CURL extension
  3. JSON extension
 
 ## Install ##
- 1. Install library using composer
+
+1. Install library using composer
+
 ```
-composer require juliuspc/openid-connect-php
+composer require maicol07/oidc-client-php
 ```
- 2. Include composer autoloader
+
+2. Include composer autoloader
+
 ```php
 require __DIR__ . '/vendor/autoload.php';
 ```
 
+**NOTE: Examples are outdated! Check the `example` folder in the repo in the meantime**
+
 ## Example 1: Basic Client ##
 
-This example uses the Authorization Code flow and will also use PKCE if the OpenID Provider announces it in his Discovery document. If you are not sure, which flow you should choose: This one is the way to go. It is the most secure and versatile.
+This example uses the Authorization Code flow and will also use PKCE if the OpenID Provider announces it in his
+Discovery document. If you are not sure, which flow you should choose: This one is the way to go. It is the most secure
+and versatile.
 
 ```php
 use JuliusPC\OpenIDConnectClient;
@@ -184,7 +196,6 @@ $oidc->httpUpgradeInsecureRequests(false);
 
 ### Todo ###
 - Dynamic registration does not support registration auth tokens and endpoints
-- improving tests and test coverage of this library
 
   [1]: https://openid.net/specs/openid-connect-basic-1_0-15.html#id_res
 
