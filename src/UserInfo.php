@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpUnused */
 
 /** @noinspection MagicMethodsValidityInspection */
 
@@ -7,6 +7,7 @@
 namespace Maicol07\OIDCClient;
 
 use Illuminate\Support\Collection;
+use JetBrains\PhpStorm\Pure;
 
 /**
  * OIDC Claims
@@ -48,5 +49,15 @@ class UserInfo
     public function __get(string $name): mixed
     {
         return $this->attrs->get($name);
+    }
+
+    #[Pure] public function all(): array
+    {
+        return $this->attrs->all();
+    }
+
+    public function attrs(): Collection
+    {
+        return $this->attrs;
     }
 }
