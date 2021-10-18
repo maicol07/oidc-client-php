@@ -2,7 +2,7 @@
 /** @noinspection PhpUnused */
 /** @noinspection PhpPropertyOnlyWrittenInspection */
 
-namespace Maicol07\OIDCClient;
+namespace Maicol07\OpenIDConnect;
 
 use DateInterval;
 use DateTimeZone;
@@ -29,18 +29,11 @@ use function bin2hex;
 use function random_bytes;
 
 /**
- * OpenIDConnect Exception Class
- */
-class OpenIDConnectClientException extends Exception
-{
-}
-
-/**
  *
  * Please note this class stores nonces by default in $_SESSION['openid_connect_nonce']
  *
  */
-class OIDCClient
+class Client
 {
     private string $client_id;
     private string $client_name;
@@ -179,7 +172,7 @@ class OIDCClient
     /**
      * Authenticate the user
      *
-     * @throws OpenIDConnectClientException
+     * @throws ClientException
      * @throws Exception
      */
     public function authenticate(): bool
@@ -191,13 +184,13 @@ class OIDCClient
         if ($this->authorization_response_iss_parameter_supported && $request->hasAny(['error', 'code', 'id_token'])
             && $request->get('iss') === $this->issuer
         ) {
-            throw new OpenIDConnectClientException('Error: validation of iss response parameter failed');
+            throw new ClientException('Error: validation of iss response parameter failed');
         }
 
         // Do a preemptive check to see if the provider has thrown an error from a previous redirect.
         if ($request->has('error')) {
             $description = ' Description: ' . $request->get('error_description', 'No description provided');
-            throw new OpenIDConnectClientException('Error: ' . $request->get('error') . $description);
+            throw new ClientException('Error: ' . $request->get('error') . $description);
         }
 
         $jwt_config = $this->jwt();
@@ -211,27 +204,27 @@ class OIDCClient
             $error = $token_response->get('error');
             if ($error) {
                 $description = $token_response->get('error_description');
-                throw new OpenIDConnectClientException($description ?: ('Got response: ' . $error));
+                throw new ClientException($description ?: ('Got response: ' . $error));
             }
 
             // Do an OpenID Connect session check
             if ($request->get('state') !== Session::take('oidc_state')) {
-                throw new OpenIDConnectClientException('Unable to determine state');
+                throw new ClientException('Unable to determine state');
             }
 
             if (!$token_response->has('id_token')) {
-                throw new OpenIDConnectClientException('User did not authorize openid scope.');
+                throw new ClientException('User did not authorize openid scope.');
             }
 
             if (Session::take('oidc_nonce') !== $request->get('nonce')) {
-                throw new OpenIDConnectClientException("Generated nonce is not equal to the one returned by the server.");
+                throw new ClientException("Generated nonce is not equal to the one returned by the server.");
             }
 
             try {
                 $jwt = $jwt_config->parser()->parse($token_response->get('id_token'));
                 $jwt_config->validator()->assert($jwt, ...$jwt_config->validationConstraints());
             } catch (RequiredConstraintsViolated $e) {
-                throw new OpenIDConnectClientException('JWT validation error - Claims not valid: ' . implode(', ', $e->violations()));
+                throw new ClientException('JWT validation error - Claims not valid: ' . implode(', ', $e->violations()));
             }
 
             $this->id_token = $token_response->get('id_token');
@@ -247,14 +240,14 @@ class OIDCClient
 
             // Do an OpenID Connect session check
             if ($request->get('state') !== Session::take('oidc_state')) {
-                throw new OpenIDConnectClientException('Unable to determine state');
+                throw new ClientException('Unable to determine state');
             }
 
             try {
                 $jwt = $jwt_config->parser()->parse($id_token);
                 $jwt_config->validator()->assert($jwt, ...$jwt_config->validationConstraints());
             } catch (RequiredConstraintsViolated $e) {
-                throw new OpenIDConnectClientException('JWT validation error - Claims not valid: ' . implode(', ', $e->violations()));
+                throw new ClientException('JWT validation error - Claims not valid: ' . implode(', ', $e->violations()));
             }
 
             // Save the id token
@@ -264,7 +257,7 @@ class OIDCClient
                 return true;
             }
 
-            throw new OpenIDConnectClientException('Unable to verify JWT claims');
+            throw new ClientException('Unable to verify JWT claims');
         }
 
         $this->requestAuthorization();
@@ -351,7 +344,7 @@ class OIDCClient
     /**
      * Start Here
      *
-     * @throws OpenIDConnectClientException
+     * @throws ClientException
      * @throws Exception
      */
     #[NoReturn]
@@ -454,7 +447,7 @@ class OIDCClient
     /**
      * Returns the user info
      *
-     * @throws OpenIDConnectClientException
+     * @throws ClientException
      */
     public function getUserInfo(): UserInfo
     {
@@ -463,7 +456,7 @@ class OIDCClient
             ->get($this->userinfo_endpoint, ['schema' => 'openid']);
 
         if (!$response->ok()) {
-            throw new OpenIDConnectClientException('The communication to retrieve user data has failed with status code ' . $response->body());
+            throw new ClientException('The communication to retrieve user data has failed with status code ' . $response->body());
         }
 
         return new UserInfo($response->collect()->put('id_token', $this->id_token));
@@ -479,7 +472,7 @@ class OIDCClient
     /**
      * Dynamic registration
      *
-     * @throws OpenIDConnectClientException
+     * @throws ClientException
      */
     public function register(?array $params = null): void
     {
@@ -491,7 +484,7 @@ class OIDCClient
 
         $error = $response->get('error_description');
         if ($error) {
-            throw new OpenIDConnectClientException($error);
+            throw new ClientException($error);
         }
 
         $this->client_id = $response->get('client_id');
@@ -502,7 +495,7 @@ class OIDCClient
         if ($secret) {
             $this->client_secret = $secret;
         } else {
-            throw new OpenIDConnectClientException('Error registering:
+            throw new ClientException('Error registering:
                                                     Please contact the OpenID Connect provider and obtain a Client ID and Secret directly from them');
         }
     }

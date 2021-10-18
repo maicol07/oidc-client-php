@@ -1,10 +1,10 @@
 <?php
 require_once '../vendor/autoload.php';
-require_once '../src/OIDCClient.php';
+require_once '../src/Client.php';
 
-use Maicol07\OIDCClient\OIDCClient;
+use Maicol07\OpenIDConnect\Client;
 
-$client = new OIDCClient([
+$client = new Client([
     'client_id' => '000123',
     'client_secret' => 'rlC_8s3oBayCynAO_7UKt34hbEwiiTKx0l7zRcrFY3A',
     'provider_url' => 'https://demo.c2id.com',

@@ -4,7 +4,7 @@
 
 /** @noinspection InterfacesAsConstructorDependenciesInspection */
 
-namespace Maicol07\OIDCClient;
+namespace Maicol07\OpenIDConnect;
 
 use Illuminate\Support\Collection;
 use JetBrains\PhpStorm\Pure;

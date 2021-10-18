@@ -26,7 +26,7 @@
     },
     "autoload" : {
          "psr-4": {
-           "\\Maicol07\\OIDCClient\\": "src"
+           "\\Maicol07\\OpenIDConnect\\": "src"
          }
     }
 }
