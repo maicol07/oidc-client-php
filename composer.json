@@ -1,18 +1,23 @@
 {
-    "name": "juliuspc/openid-connect-php",
+    "name": "maicol07/oidc-client",
     "description": "OpenID Connect client",
     "keywords": ["OpenID Connect", "OIDC", "client", "OAuth 2", "SSO", "RFC6749", "RFC7009", "RFC7636", "RFC7662"],
     "license": "Apache-2.0",
     "require": {
-        "php": ">=5.4",
-        "phpseclib/phpseclib" : "~2.0",
+        "php": ">=8.0",
         "ext-json": "*",
         "ext-curl": "*",
-        "paragonie/random_compat": ">=2"
+        "delight-im/cookie": "^3",
+        "guzzlehttp/guzzle": "^7",
+        "illuminate/collections": "^8",
+        "illuminate/http": "^8",
+        "illuminate/support": "^8",
+        "lcobucci/clock": "^2",
+        "lcobucci/jwt": "^4"
     },
     "require-dev": {
-        "phpunit/phpunit": "^4.8",
-        "roave/security-advisories": "dev-master"
+        "roave/security-advisories": "dev-latest",
+        "friendsofphp/php-cs-fixer": "^3.2"
     },
     "archive" : {
         "exclude" : [
@@ -20,11 +25,8 @@
         ]
     },
     "autoload" : {
-         "classmap": [ "src/"]
-    },
-  "config" : {
-    "platform": {
-      "php": "5.4"
+         "psr-4": {
+           "\\Maicol07\\OIDCClient\\": "src"
+         }
     }
-  }
 }
