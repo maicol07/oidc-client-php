@@ -7,13 +7,13 @@
         "php": ">=8.0",
         "ext-json": "*",
         "ext-curl": "*",
-        "delight-im/cookie": "^3",
         "guzzlehttp/guzzle": "^7",
         "illuminate/collections": "^8",
         "illuminate/http": "^8",
         "illuminate/support": "^8",
         "lcobucci/clock": "^2",
-        "lcobucci/jwt": "^4"
+        "lcobucci/jwt": "^4",
+        "cse/helpers-session": "^1.1"
     },
     "require-dev": {
         "roave/security-advisories": "dev-latest",

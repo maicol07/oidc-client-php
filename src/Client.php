@@ -4,6 +4,7 @@
 
 namespace Maicol07\OpenIDConnect;
 
+use cse\helpers\Session;
 use DateInterval;
 use DateTimeZone;
 use Exception;
@@ -12,7 +13,6 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Delight\Cookie\Session;
 use Illuminate\Support\Str;
 use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\NoReturn;
@@ -124,7 +124,7 @@ class Client
                 Arr::get($user_config, 'well_known_request_params')
             );
             if ($response->ok()) {
-                $config = $response->collect()->mergeRecursive($user_config);
+                $config = $response->collect()->merge($user_config);
             }
         }
 
@@ -208,17 +208,19 @@ class Client
             }
 
             // Do an OpenID Connect session check
-            if ($request->get('state') !== Session::take('oidc_state')) {
+            if ($request->get('state') !== Session::get('oidc_state')) {
                 throw new ClientException('Unable to determine state');
             }
+            Session::remove('oidc_state');
 
             if (!$token_response->has('id_token')) {
                 throw new ClientException('User did not authorize openid scope.');
             }
 
-            if (Session::take('oidc_nonce') !== $request->get('nonce')) {
+            if (Session::get('oidc_nonce') !== $request->get('nonce')) {
                 throw new ClientException("Generated nonce is not equal to the one returned by the server.");
             }
+            Session::remove('oidc_nonce');
 
             try {
                 $jwt = $jwt_config->parser()->parse($token_response->get('id_token'));
@@ -239,9 +241,10 @@ class Client
             $this->access_token = $request->get('access_token');
 
             // Do an OpenID Connect session check
-            if ($request->get('state') !== Session::take('oidc_state')) {
+            if ($request->get('state') !== Session::get('oidc_state')) {
                 throw new ClientException('Unable to determine state');
             }
+            Session::remove('oidc_state');
 
             try {
                 $jwt = $jwt_config->parser()->parse($id_token);
@@ -253,9 +256,10 @@ class Client
             // Save the id token
             $this->id_token = $id_token;
 
-            if ($request->get('nonce') === Session::take('oidc_nonce')) {
+            if ($request->get('nonce') === Session::get('oidc_nonce')) {
                 return true;
             }
+            Session::remove('oidc_nonce');
 
             throw new ClientException('Unable to verify JWT claims');
         }
@@ -352,7 +356,7 @@ class Client
     {
         $auth_endpoint = $this->getAuthorizationUrl();
 
-        Session::start();
+        session_write_close();
         $this->redirect($auth_endpoint);
     }
 
