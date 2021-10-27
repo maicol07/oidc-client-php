@@ -15,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\NoReturn;
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
@@ -77,38 +76,40 @@ class Client
     private bool $jwt_plain_key;
 
     /**
-     * @param array $user_config Config for the OIDC Client. The missing config values will be retrieved from the provider via auto-discovery if the `provider_url` exists and the auto-discovery endpoint is supported.
+     * @param array{
+     *     client_id: string,
+     *     client_secret: string,
+     *     provider_url?: string,
+     *     issuer?: string,
+     *     http_proxy?: string,
+     *     cert_path?: string,
+     *     verify?: bool,
+     *     scopes?: array<string>,
+     *     enable_pkce?: bool,
+     *     enable_nonce?: bool,
+     *     allow_implicit_flow?: bool,
+     *     code_challenge_method?: string,
+     *     timeout?: int,
+     *     leeway?: int,
+     *     redirect_uri?: int,
+     *     response_types?: array<string>,
+     *     authorization_endpoint?: string,
+     *     authorization_response_iss_parameter_supported?: bool,
+     *     token_endpoint?: string,
+     *     token_endpoint_auth_methods_supported?: array<string>,
+     *     userinfo_endpoint?: string,
+     *     end_session_endpoint?: string,
+     *     registration_endpoint?: string,
+     *     introspect_endpoint?: string,
+     *     revocation_endpoint?: string,
+     *     jwt_signing_method?: 'sha256'|'sha384'|'sha512',
+     *     jwt_key?: string,
+     *     jwt_plain_key?: bool
+     * } $user_config Config for the OIDC Client. The missing config values will be retrieved from the provider via auto-discovery if the `provider_url` exists and the auto-discovery endpoint is supported.
+     *
+     * @noinspection PhpDocSignatureInspection
      */
-    public function __construct(#[ArrayShape([
-        'client_id' => 'string',
-        'client_secret' => 'string',
-        'provider_url' => '?string',
-        'issuer' => '?string',
-        'http_proxy' => '?string',
-        'cert_path' => '?string',
-        'verify' => '?bool',
-        'scopes' => '?array',
-        'enable_pkce' => '?bool',
-        'enable_nonce' => '?bool',
-        'allow_implicit_flow' => '?bool',
-        'code_challenge_method' => '?string',
-        'timeout' => '?int',
-        'leeway' => '?int',
-        'redirect_uri' => 'string',
-        'response_types' => '?array',
-        'authorization_endpoint' => '?string',
-        'authorization_response_iss_parameter_supported' => '?bool',
-        'token_endpoint' => '?string',
-        'token_endpoint_auth_methods_supported' => '?array',
-        'userinfo_endpoint' => '?string',
-        'end_session_endpoint' => '?string',
-        'registration_endpoint' => '?string',
-        'introspect_endpoint' => '?string',
-        'revocation_endpoint' => '?string',
-        'jwt_signing_method' => '?string',
-        'jwt_key' => 'string',
-        'jwt_plain_key' => '?bool'
-    ])] array $user_config)
+    public function __construct(array $user_config)
     {
         $this->http_client = (new Factory())->withOptions([
             'connect_timeout' => Arr::get($user_config, 'timeout', 0),
