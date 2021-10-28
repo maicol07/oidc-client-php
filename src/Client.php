@@ -112,9 +112,9 @@ class Client
     public function __construct(array $user_config)
     {
         $this->http_client = (new Factory())->withOptions([
-            'connect_timeout' => Arr::get($user_config, 'timeout', 0),
+            'connect_timeout' => Arr::get($user_config, 'timeout', 0) ?? 0,
             'proxy' => Arr::get($user_config, 'http_proxy'),
-            'verify' => Arr::get($user_config, 'verify') ?: (Arr::get($user_config, 'cert_path', false))
+            'verify' => (Arr::get($user_config, 'verify', true) ?? true) ?: (Arr::get($user_config, 'cert_path', false) ?? false)
         ]);
 
         // Auto discovery
