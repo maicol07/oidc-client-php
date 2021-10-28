@@ -111,10 +111,12 @@ class Client
      */
     public function __construct(array $user_config)
     {
+        $user_config = array_filter($user_config, static fn ($value) => !is_null($value));
+
         $this->http_client = (new Factory())->withOptions([
-            'connect_timeout' => Arr::get($user_config, 'timeout', 0) ?? 0,
+            'connect_timeout' => Arr::get($user_config, 'timeout', 0),
             'proxy' => Arr::get($user_config, 'http_proxy'),
-            'verify' => (Arr::get($user_config, 'verify', true) ?? true) ?: (Arr::get($user_config, 'cert_path', false) ?? false)
+            'verify' => Arr::get($user_config, 'verify', true) ?: Arr::get($user_config, 'cert_path', false)
         ]);
 
         // Auto discovery
@@ -125,6 +127,7 @@ class Client
                 "$provider_url/.well-known/openid-configuration",
                 Arr::get($user_config, 'well_known_request_params')
             );
+
             if ($response->ok()) {
                 $config = $response->collect()->merge($user_config);
             }
@@ -158,7 +161,7 @@ class Client
             'jwt_plain_key' => false
         ];
         foreach ($props as $prop => $default) {
-            $this->{$prop} = $config->get($prop, $default) ?? $default;
+            $this->{$prop} = $config->get($prop, $default);
         }
 
         if (empty($this->code_challenge_method)) {
