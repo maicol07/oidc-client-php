@@ -158,7 +158,7 @@ class Client
             'jwt_plain_key' => false
         ];
         foreach ($props as $prop => $default) {
-            $this->{$prop} = $config->get($prop, $default);
+            $this->{$prop} = $config->get($prop, $default) ?? $default;
         }
 
         if (empty($this->code_challenge_method)) {
