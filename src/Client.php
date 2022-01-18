@@ -129,7 +129,9 @@ class Client
             );
 
             if ($response->ok()) {
-                $config = $response->collect()->merge($user_config);
+                $config = $response
+                    ->collect()
+                    ->merge(array_filter($user_config, static fn ($value) => !is_null($value)));
             }
         }
 
