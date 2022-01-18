@@ -123,10 +123,16 @@ class Client
         $provider_url = rtrim(Arr::get($user_config, 'provider_url'), '/');
 
         if ($provider_url) {
-            $response = $this->http_client->get(
-                "$provider_url/.well-known/openid-configuration",
-                Arr::get($user_config, 'well_known_request_params')
-            );
+            $discovery_path = '.well-known/openid-configuration';
+            $discovery_endpoint = "$provider_url/$discovery_path";
+
+            if (Str::endsWith($provider_url, $discovery_path)) {
+                $discovery_endpoint = $provider_url;
+                $provider_url = Str::replace($provider_url, $discovery_path, '');
+            }
+
+            $response = $this->http_client
+                ->get($discovery_endpoint, Arr::get($user_config, 'well_known_request_params'));
 
             if ($response->ok()) {
                 $config = $response->collect()->merge($user_config);
