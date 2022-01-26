@@ -312,12 +312,12 @@ class Client
      *
      * @throws Exception
      */
-    public function getAuthorizationUrl(?array $query_params=null): string
+    public function getAuthorizationUrl(?array $query_params=null, ?string $state=null): string
     {
         $auth_endpoint = $this->authorization_endpoint;
 
         // State essentially acts as a session key for OIDC
-        $state = Str::random();
+        $state = $state ?? Str::random();
         Session::set('oidc_state', $state);
 
         $params = collect([
