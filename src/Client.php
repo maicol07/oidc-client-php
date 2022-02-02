@@ -396,7 +396,7 @@ class Client
             $data['code_verifier'] = $code_verifier;
         }
 
-        return $http_client->post($this->token_endpoint, $data)->collect();
+        return $http_client->asForm()->post($this->token_endpoint, $data)->collect();
     }
 
     /**
