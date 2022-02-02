@@ -33,16 +33,17 @@ trait ImplictFlow
         }
         Session::remove('oidc_state');
 
-        $this->validateJWT($id_token);
+        $jwt = $this->jwt()->parser()->parse($id_token);
+        $this->validateJWT($jwt);
+
+        if ($this->enable_nonce && Session::get('oidc_nonce') !== $jwt->claims()->get('nonce')) {
+            throw new ClientException("Generated nonce is not equal to the one returned by the server.");
+        }
+        Session::remove('oidc_nonce');
 
         // Save the id token
         $this->id_token = $id_token;
 
-        if ($this->enable_nonce && $request->get('nonce') === Session::get('oidc_nonce')) {
-            return true;
-        }
-        Session::remove('oidc_nonce');
-
-        throw new ClientException('Unable to verify JWT claims');
+        return true;
     }
 }

@@ -46,10 +46,12 @@ trait JWT
     private bool $jwt_plain_key;
     private int $leeway;
 
-    private function validateJWT(string $id_token): void
+    private function validateJWT(string|\Lcobucci\JWT\Token $jwt): void
     {
         try {
-            $jwt = $this->jwt()->parser()->parse($id_token);
+            if (is_string($jwt)) {
+                $jwt = $this->jwt()->parser()->parse($jwt);
+            }
             $claims = $jwt->claims();
             if (!(
                 $claims->has(RegisteredClaims::EXPIRATION_TIME)
