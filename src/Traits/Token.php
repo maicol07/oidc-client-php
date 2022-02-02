@@ -141,11 +141,6 @@ trait Token
             throw new ClientException('User did not authorize openid scope.');
         }
 
-        if ($this->enable_nonce && Session::get('oidc_nonce') !== $request->get('nonce')) {
-            throw new ClientException("Generated nonce is not equal to the one returned by the server.");
-        }
-        Session::remove('oidc_nonce');
-
         try {
             $jwt = $this->jwt()->parser()->parse($token_response->get('id_token'));
             $this->jwt()->validator()->assert($jwt, ...$this->jwt()->validationConstraints());
@@ -154,6 +149,11 @@ trait Token
                 'JWT validation error - Claims not valid: ' . implode(', ', $e->violations())
             );
         }
+
+        if ($this->enable_nonce && Session::get('oidc_nonce') !== $jwt->claims()->get('nonce')) {
+            throw new ClientException("Generated nonce is not equal to the one returned by the server.");
+        }
+        Session::remove('oidc_nonce');
 
         $this->id_token = $token_response->get('id_token');
         $this->access_token = $token_response->get('access_token');
