@@ -76,7 +76,7 @@ class Client
     private bool $jwt_plain_key;
 
     /**
-     * @param array{
+     * @param array {
      *     client_id: string,
      *     client_secret: string,
      *     provider_url?: string,
@@ -105,9 +105,10 @@ class Client
      *     jwt_signing_method?: 'sha256'|'sha384'|'sha512',
      *     jwt_key?: string,
      *     jwt_plain_key?: bool
-     * } $user_config Config for the OIDC Client. The missing config values will be retrieved from the provider via auto-discovery if the `provider_url` exists and the auto-discovery endpoint is supported.
+     * } $user_config Config for the OIDC Client.
+     * The missing config values will be retrieved from the provider via auto-discovery if the `provider_url` exists
+     * and the auto-discovery endpoint is supported.
      *
-     * @noinspection PhpDocSignatureInspection
      */
     public function __construct(array $user_config)
     {
@@ -237,7 +238,9 @@ class Client
                 $jwt = $jwt_config->parser()->parse($token_response->get('id_token'));
                 $jwt_config->validator()->assert($jwt, ...$jwt_config->validationConstraints());
             } catch (RequiredConstraintsViolated $e) {
-                throw new ClientException('JWT validation error - Claims not valid: ' . implode(', ', $e->violations()));
+                throw new ClientException(
+                    'JWT validation error - Claims not valid: ' . implode(', ', $e->violations())
+                );
             }
 
             $this->id_token = $token_response->get('id_token');
@@ -261,7 +264,9 @@ class Client
                 $jwt = $jwt_config->parser()->parse($id_token);
                 $jwt_config->validator()->assert($jwt, ...$jwt_config->validationConstraints());
             } catch (RequiredConstraintsViolated $e) {
-                throw new ClientException('JWT validation error - Claims not valid: ' . implode(', ', $e->violations()));
+                throw new ClientException(
+                    'JWT validation error - Claims not valid: ' . implode(', ', $e->violations())
+                );
             }
 
             // Save the id token
@@ -290,7 +295,7 @@ class Client
      *
      */
     #[NoReturn]
-    public function signOut(string $id_token, ?string $redirect=null): void
+    public function signOut(string $id_token, ?string $redirect = null): void
     {
         $endpoint = $this->end_session_endpoint;
 
@@ -312,7 +317,7 @@ class Client
      *
      * @throws Exception
      */
-    public function getAuthorizationUrl(?array $query_params=null, ?string $state=null): string
+    public function getAuthorizationUrl(?array $query_params = null, ?string $state = null): string
     {
         $auth_endpoint = $this->authorization_endpoint;
 
@@ -341,14 +346,30 @@ class Client
 
         // If the OP supports Proof Key for Code Exchange (PKCE) and it is enabled
         // PKCE will only used in pure authorization code flow and hybrid flow
-        if ($this->enable_pkce && !empty($this->code_challenge_method) && (empty($this->response_types) || count(array_diff($this->response_types, ['token', 'id_token'])) > 0)
+        if (
+            $this->enable_pkce
+            && !empty($this->code_challenge_method)
+            && (empty($this->response_types) || count(array_diff($this->response_types, ['token', 'id_token'])) > 0)
         ) {
             // Generate a cryptographically secure code
             $code_verifier = bin2hex(random_bytes(64));
             Session::set('oidc_code_verifier', $code_verifier);
-            $code_challenge = !empty($this->pkce_algorithms[$this->code_challenge_method]) ?
-                rtrim(strtr(base64_encode(hash($this->pkce_algorithms[$this->code_challenge_method], $code_verifier, true)), '+/', '-_'), '=') :
-                $code_verifier;
+            $code_challenge = !empty($this->pkce_algorithms[$this->code_challenge_method])
+                ? rtrim(
+                    strtr(
+                        base64_encode(
+                            hash(
+                                $this->pkce_algorithms[$this->code_challenge_method],
+                                $code_verifier,
+                                true
+                            )
+                        ),
+                        '+/',
+                        '-_'
+                    ),
+                    '='
+                )
+                : $code_verifier;
             $params->put('code_challenge', $code_challenge)->put('code_challenge_method', $this->code_challenge_method);
         }
 
@@ -385,9 +406,9 @@ class Client
         ];
 
         // Consider Basic authentication if provider config is set this way
-        $http_client = $this->http_client;
+        $client = $this->http_client;
         if (in_array('client_secret_basic', $this->token_endpoint_auth_methods_supported, true)) {
-            $http_client = $http_client->withBasicAuth($this->client_id, $this->client_secret);
+            $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
 
@@ -396,7 +417,7 @@ class Client
             $data['code_verifier'] = $code_verifier;
         }
 
-        return $http_client->asForm()->post($this->token_endpoint, $data)->collect();
+        return $client->asForm()->post($this->token_endpoint, $data)->collect();
     }
 
     /**
@@ -417,15 +438,15 @@ class Client
             $data['scopes'] = implode(' ', $this->scopes);
         }
 
-        $http_client = $this->http_client;
+        $client = $this->http_client;
 
         // Consider Basic authentication if provider config is set this way
         if (in_array('client_secret_basic', $this->token_endpoint_auth_methods_supported, true)) {
-            $http_client = $http_client->withBasicAuth($this->client_id, $this->client_secret);
+            $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
 
-        $response = $http_client->post($this->token_endpoint, $data)->collect();
+        $response = $client->post($this->token_endpoint, $data)->collect();
 
         $this->access_token = $response->get('access_token');
         $this->refresh_token = $response->get('refresh_token');
@@ -451,7 +472,12 @@ class Client
 
         $config->setValidationConstraints(
             new PermittedFor($this->client_id),
-            new StrictValidAt(new SystemClock(new DateTimeZone(date_default_timezone_get())), new DateInterval("PT{$this->leeway}S")),
+            new StrictValidAt(
+                new SystemClock(
+                    new DateTimeZone(date_default_timezone_get())
+                ),
+                new DateInterval("PT{$this->leeway}S")
+            ),
             new SignedWith($config->signer(), $config->signingKey()),
             new IssuedBy($this->issuer)
         );
@@ -471,7 +497,9 @@ class Client
             ->get($this->userinfo_endpoint, ['schema' => 'openid']);
 
         if (!$response->ok()) {
-            throw new ClientException('The communication to retrieve user data has failed with status code ' . $response->body());
+            throw new ClientException(
+                'The communication to retrieve user data has failed with status code ' . $response->body()
+            );
         }
 
         return new UserInfo($response->collect()->put('id_token', $this->id_token));
@@ -510,8 +538,8 @@ class Client
         if ($secret) {
             $this->client_secret = $secret;
         } else {
-            throw new ClientException('Error registering:
-                                                    Please contact the OpenID Connect provider and obtain a Client ID and Secret directly from them');
+            throw new ClientException('Error registering: Please contact the OpenID Connect provider
+             and obtain a Client ID and Secret directly from them');
         }
     }
 
@@ -520,7 +548,12 @@ class Client
      *
      * @link https://tools.ietf.org/html/rfc7662
      */
-    public function introspectToken(string $token, string $token_type_hint = '', ?string $client_id = null, ?string $client_secret = null): Collection
+    public function introspectToken(
+        string  $token,
+        string  $token_type_hint = '',
+        ?string $client_id = null,
+        ?string $client_secret = null
+    ): Collection
     {
         $data = ['token' => $token];
 
@@ -542,7 +575,12 @@ class Client
      *
      * @see https://tools.ietf.org/html/rfc7009
      */
-    public function revokeToken(string $token, string $token_type_hint = '', ?string $client_id = null, ?string $client_secret = null): Collection
+    public function revokeToken(
+        string  $token,
+        string  $token_type_hint = '',
+        ?string $client_id = null,
+        ?string $client_secret = null
+    ): Collection
     {
         $data = ['token' => $token];
 
@@ -562,7 +600,9 @@ class Client
     /** @noinspection GlobalVariableUsageInspection */
     public function getCurrentURL(): string
     {
-        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] === 443) ? "https://" : "http://";
+        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] === 443)
+            ? "https://"
+            : "http://";
         return $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
     }
 
