@@ -21,7 +21,6 @@ namespace Maicol07\OpenIDConnect\Traits;
 use cse\helpers\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Maicol07\OpenIDConnect\ClientException;
 
 trait Token
@@ -141,14 +140,7 @@ trait Token
             throw new ClientException('User did not authorize openid scope.');
         }
 
-        try {
-            $jwt = $this->jwt()->parser()->parse($token_response->get('id_token'));
-            $this->jwt()->validator()->assert($jwt, ...$this->jwt()->validationConstraints());
-        } catch (RequiredConstraintsViolated $e) {
-            throw new ClientException(
-                'JWT validation error - Claims not valid: ' . implode(', ', $e->violations())
-            );
-        }
+        $this->validateJWT($token_response->get('id_token'));
 
         if ($this->enable_nonce && Session::get('oidc_nonce') !== $jwt->claims()->get('nonce')) {
             throw new ClientException("Generated nonce is not equal to the one returned by the server.");

@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpUnusedPrivateMethodInspection */
+<?php
+
+/** @noinspection PhpUnusedPrivateMethodInspection */
 
 /*
  * Copyright 2022 Maicol07 (https://maicol07.it)
@@ -27,10 +29,11 @@ use Lcobucci\JWT\Signer\Ecdsa;
 use Lcobucci\JWT\Signer\Hmac;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa;
+use Lcobucci\JWT\Token\RegisteredClaims;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
 use Lcobucci\JWT\Validation\Constraint\PermittedFor;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
-use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Maicol07\OpenIDConnect\ClientException;
 
@@ -47,6 +50,13 @@ trait JWT
     {
         try {
             $jwt = $this->jwt()->parser()->parse($id_token);
+            $claims = $jwt->claims();
+            if (!(
+                $claims->has(RegisteredClaims::EXPIRATION_TIME)
+                && $claims->has(RegisteredClaims::ISSUED_AT)
+            )) {
+                throw new ClientException('Missing required claims: exp, iat');
+            }
             $this->jwt()->validator()->assert($jwt, ...$this->jwt()->validationConstraints());
         } catch (RequiredConstraintsViolated $e) {
             throw new ClientException(
@@ -79,7 +89,7 @@ trait JWT
 
         $config->setValidationConstraints(
             new PermittedFor($this->client_id),
-            new StrictValidAt(
+            new LooseValidAt(
                 new SystemClock(
                     new DateTimeZone(date_default_timezone_get())
                 ),
