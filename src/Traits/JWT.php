@@ -97,7 +97,7 @@ trait JWT
                 ),
                 new DateInterval("PT{$this->leeway}S")
             ),
-            new SignedWith($config->signer(), $config->signingKey()),
+            new SignedWith($config->signer(), $config->verificationKey()),
             new IssuedBy($this->issuer)
         );
 
