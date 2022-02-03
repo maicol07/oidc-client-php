@@ -143,8 +143,9 @@ class Client
             'registration_endpoint' => null,
             'introspect_endpoint' => null,
             'revocation_endpoint' => null,
-            'jwt_signing_method' => 'sha256',
+            'jwt_signing_method' => 'HS256',
             'jwt_key' => Arr::get($config, 'client_secret'),
+            'jwt_signing_key' => null,
             'jwt_plain_key' => false
         ];
         foreach ($props as $prop => $default) {
