@@ -99,6 +99,7 @@ class Client
      *     revocation_endpoint?: string,
      *     jwt_signing_method?: 'sha256'|'sha384'|'sha512',
      *     jwt_key?: string,
+     *     jwt_signing_key?: string,
      *     jwt_plain_key?: bool
      * } $user_config Config for the OIDC Client.
      * The missing config values will be retrieved from the provider via auto-discovery if the `provider_url` exists
