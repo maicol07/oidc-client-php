@@ -23,6 +23,11 @@ use Maicol07\OpenIDConnect\ClientException;
 
 trait ImplictFlow
 {
+    /** Allow OAuth 2 implicit flow.
+     * @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
+     */
+    private bool $allow_implicit_flow = false;
+
     private function implictFlow(Request $request, string $id_token): bool
     {
         $this->access_token = $request->get('access_token');

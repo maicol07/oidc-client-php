@@ -22,11 +22,13 @@ namespace Maicol07\OpenIDConnect\Traits;
 
 use DateInterval;
 use DateTimeZone;
-use Illuminate\Support\Str;
+use Jose\Component\Core\JWK;
+use Jose\Component\Core\JWKSet;
+use Jose\Component\Core\Util\RSAKey;
 use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Ecdsa;
-use Lcobucci\JWT\Signer\Hmac;
+use Lcobucci\JWT\Signer\Key;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa;
 use Lcobucci\JWT\Token\RegisteredClaims;
@@ -36,15 +38,48 @@ use Lcobucci\JWT\Validation\Constraint\PermittedFor;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use Maicol07\OpenIDConnect\ClientException;
+use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
 
 trait JWT
 {
-    private string $jwt_signing_method;
-    /** @var string|null Only needed if signing method is set to RSXXX or ECXXX. */
-    private ?string $jwt_signing_key;
-    private ?string $jwt_key;
-    private bool $jwt_plain_key;
-    private int $leeway;
+    private JwtSigningAlgorithm $jwt_signing_algorithm = JwtSigningAlgorithm::HS256;
+    /** Only needed if signing method is set to RSXXX or ECXXX. */
+    private ?string $jwt_signing_key = null;
+    /** Only needed if signing method is set to RSXXX or ECXXX. */
+    private string|JWK $jwt_verification_key = '';
+    /** Either plain or base64 encoded key */
+    private ?string $jwt_key = null;
+    private bool $jwt_base64_encoded_key = false;
+    private int $leeway = 300;
+    private string $jwk_kid = '';
+    private ?JWKSet $jwks = null;
+    private ?string $jwk_endpoint = null;
+
+    /**
+     * Set an asymmetric key to verify the signature of the JWT.
+     *
+     * @param string $signing_key The public key used to sign the JWT
+     * @param string $encoding_key The private key used to verify the JWT signature
+     */
+    public function jwtAsymmetricKey(string $signing_key, string $encoding_key): self
+    {
+        $this->jwt_signing_key = $signing_key;
+        $this->jwt_verification_key = $encoding_key;
+        return $this;
+    }
+
+    /**
+     * Set a symmetric key to verify the signature of the JWT.
+     *
+     * @param string $key A plain or base64 encoded key
+     * @param bool $base64 If the key is plain or base64 encoded
+     */
+    public function jwtSymmetricKey(string $key, bool $base64 = false): self
+    {
+        $this->jwt_key = $key;
+        $this->jwt_base64_encoded_key = $base64;
+        return $this;
+    }
 
     private function validateJWT(string|\Lcobucci\JWT\Token $jwt): void
     {
@@ -52,6 +87,12 @@ trait JWT
             if (is_string($jwt)) {
                 $jwt = $this->jwt()->parser()->parse($jwt);
             }
+
+            if (!empty($this->jwks)) {
+                $this->jwk_kid = $jwt->headers()->get('kid');
+                $this->jwt_verification_key = $this->jwks->get($this->jwk_kid);
+            }
+
             $claims = $jwt->claims();
             if (!(
                 $claims->has(RegisteredClaims::EXPIRATION_TIME)
@@ -69,24 +110,17 @@ trait JWT
 
     private function jwt(): Configuration
     {
-        $signer = match ($this->jwt_signing_method) {
-            'HS256', 'sha256' => new Hmac\Sha256(),
-            'HS384', 'sha384' => new Hmac\Sha384(),
-            'HS512', 'sha512' => new Hmac\Sha512(),
-            'RS256' => new Rsa\Sha256(),
-            'RS384' => new Rsa\Sha384(),
-            'RS512' => new Rsa\Sha512(),
-            'EC256' => Ecdsa\Sha256::create(),
-            'EC384' => Ecdsa\Sha384::create(),
-            'EC512' => Ecdsa\Sha512::create(),
-        };
+        $signer = $this->jwt_signing_algorithm->getSigner();
 
-        $key = $this->getJWTKey($this->jwt_key);
+        if ($signer instanceof Rsa || $signer instanceof Ecdsa) {
+            if (empty($this->jwt_verification_key) && !empty($this->jwk_endpoint)) {
+                $set = $this->client()->get($this->jwk_endpoint)->json();
+                $this->jwks = JWKSet::createFromKeyData($set);
+            }
 
-        if (Str::startsWith($this->jwt_signing_method, ['RS', 'EC'])) {
-            $config = Configuration::forAsymmetricSigner($signer, $this->getJWTKey($this->jwt_signing_key), $key);
+            $config = Configuration::forAsymmetricSigner($signer, $this->getJWTKey($this->jwt_signing_key), $this->getJWTKey($this->jwt_verification_key));
         } else {
-            $config = Configuration::forSymmetricSigner($signer, $key);
+            $config = Configuration::forSymmetricSigner($signer, $this->getJWTKey($this->jwt_key));
         }
 
         $config->setValidationConstraints(
@@ -104,16 +138,20 @@ trait JWT
         return $config;
     }
 
-    private function getJWTKey(string $key): InMemory
+    private function getJWTKey(string|JWK $key): Key
     {
+        if ($key instanceof JWK) {
+            return new \Maicol07\OpenIDConnect\Jwk\Jwk($key);
+        }
+
         if (file_exists($key)) {
             return InMemory::file($key);
         }
 
-        if ($this->jwt_plain_key) {
-            return InMemory::plainText($key);
+        if ($this->jwt_base64_encoded_key) {
+            return InMemory::base64Encoded($key);
         }
 
-        return InMemory::base64Encoded($key);
+        return InMemory::plainText($key);
     }
 }

@@ -23,14 +23,15 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use JetBrains\PhpStorm\NoReturn;
 use Maicol07\OpenIDConnect\ClientException;
+use Maicol07\OpenIDConnect\ResponseType;
+use Maicol07\OpenIDConnect\Scope;
 
 trait Authorization
 {
     private string $authorization_endpoint;
-    private array $response_types;
+    /** @var ResponseType[] */
+    private array $response_type = [];
     private array $pkce_algorithms = ['S256' => 'sha256', 'plain' => false];
-    /** Allow OAuth 2 implicit flow; see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth */
-    private bool $allow_implicit_flow = false;
     private bool $authorization_response_iss_parameter_supported;
 
     /**
@@ -65,7 +66,7 @@ trait Authorization
             'redirect_uri' => $this->redirect_uri,
             'client_id' => $this->client_id,
             'state' => $state,
-            'scope' => implode(' ', array_merge($this->scopes, ['openid']))
+            'scope' => $this->getScopeString([Scope::OPENID])
         ])->merge($query_params);
 
         if ($this->enable_nonce) {
@@ -75,8 +76,8 @@ trait Authorization
         }
 
         // If the client has been registered with additional response types
-        if (count($this->response_types) > 0) {
-            $params->put('response_type', implode(' ', $this->response_types));
+        if (count($this->response_type) > 0) {
+            $params->put('response_type', implode(' ', array_map(static fn (ResponseType $responseType) => $responseType->value, $this->response_type)));
         }
 
         // If the OP supports Proof Key for Code Exchange (PKCE) and it is enabled
@@ -84,17 +85,17 @@ trait Authorization
         if (
             $this->enable_pkce
             && !empty($this->code_challenge_method)
-            && (empty($this->response_types) || count(array_diff($this->response_types, ['token', 'id_token'])) > 0)
+            && (empty($this->response_type) || count(array_diff($this->response_type, [ResponseType::TOKEN, ResponseType::ID_TOKEN])) > 0)
         ) {
             // Generate a cryptographically secure code
             $code_verifier = bin2hex(random_bytes(64));
             Session::set('oidc_code_verifier', $code_verifier);
-            $code_challenge = !empty($this->pkce_algorithms[$this->code_challenge_method])
+            $code_challenge = !empty($this->pkce_algorithms[$this->code_challenge_method->value])
                 ? rtrim(
                     strtr(
                         base64_encode(
                             hash(
-                                $this->pkce_algorithms[$this->code_challenge_method],
+                                $this->pkce_algorithms[$this->code_challenge_method->value],
                                 $code_verifier,
                                 true
                             )
@@ -105,7 +106,8 @@ trait Authorization
                     '='
                 )
                 : $code_verifier;
-            $params->put('code_challenge', $code_challenge)->put('code_challenge_method', $this->code_challenge_method);
+            $params->put('code_challenge', $code_challenge)
+                ->put('code_challenge_method', $this->code_challenge_method->value);
         }
 
         $auth_endpoint .= (!str_contains($auth_endpoint, '?') ? '?' : '&') . Arr::query($params->all());

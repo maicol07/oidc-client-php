@@ -35,7 +35,7 @@ trait DynamicRegistration
             ->put('redirect_uris', [$this->redirect_uri])
             ->put('client_name', $this->client_name);
 
-        $response = $this->http_client->post($this->registration_endpoint, $data->all())->collect();
+        $response = $this->client()->post($this->registration_endpoint, $data->all())->collect();
 
         $error = $response->get('error_description');
         if ($error) {

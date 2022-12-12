@@ -25,6 +25,9 @@ use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
+use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\NoReturn;
 use Maicol07\OpenIDConnect\Traits\Authorization;
 use Maicol07\OpenIDConnect\Traits\AutoDiscovery;
@@ -34,9 +37,26 @@ use Maicol07\OpenIDConnect\Traits\JWT;
 use Maicol07\OpenIDConnect\Traits\Token;
 
 /**
+ * @method $this clientId(string $client_id)
+ * @method $this clientSecret(string $client_secret)
+ * @method $this providerUrl(string $provider_url)
+ * @method $this issuer(string $issuer)
+ * @method $this scopes(string|Scope ...$scopes)
+ * @method $this redirectUri(string $redirect_uri)
+ * @method $this enablePkce(bool $enable_pkce)
+ * @method $this enableNonce(bool $enable_nonce)
+ * @method $this allowImplicitFlow(bool $allow_implcit_flow)
+ * @method $this codeChallengeMethod(CodeChallengeMethod $code_challenge_method)
+ * @method $this leeway(int $leeway)
+ * @method $this responseType(ResponseType ...$response_type)
+ * @method $this jwtSigningAlgorithm(JwtSigningAlgorithm $jwt_signing_algorithm)
+ * @method $this jwtSigningKey(string $jwt_signing_key)
+ * @method $this jwk(array $jwk)
  *
- * Please note this class stores nonces by default in $_SESSION['openid_connect_nonce']
- *
+ * @method $this httpProxy(string $proxy)
+ * @method $this certPath(string $cert_path)
+ * @method $this verifySsl(bool $verify_ssl)
+ * @method $this timeout(int $timeout)
  */
 class Client
 {
@@ -44,123 +64,87 @@ class Client
     use Token;
     use AutoDiscovery;
     use DynamicRegistration;
-
     use ImplictFlow;
     use JWT;
 
     private string $client_id;
     private string $client_secret;
-    private ?string $issuer;
-    private string $access_token;
-    private string $id_token;
-    private array $scopes;
+    private ?string $provider_url = null;
+    private ?string $issuer = null;
+    /** @var array<string|Scope> */
+    private array $scopes = [Scope::OPENID];
     private string $redirect_uri;
-
+    private bool $enable_pkce = true;
+    private bool $enable_nonce = true;
     /**
-     * @var string holds code challenge method for PKCE mode
+     * Holds code challenge method for PKCE mode
      * @see https://tools.ietf.org/html/rfc7636
      */
-    private string $code_challenge_method;
-    private bool $enable_pkce;
-    private bool $enable_nonce;
+    private CodeChallengeMethod $code_challenge_method = CodeChallengeMethod::PLAIN;
 
-    private PendingRequest $http_client;
+    private ?string $http_proxy = null;
+    private ?string $cert_path = null;
+    private bool $verify_ssl = true;
+    private int $timeout = 0;
 
+
+    private string $access_token;
+    private string $id_token;
     // Endpoints
     private string $userinfo_endpoint;
     private ?string $end_session_endpoint;
 
-    /**
-     * @param array {
-     *     client_id: string,
-     *     client_secret: string,
-     *     provider_url?: string,
-     *     issuer?: string,
-     *     http_proxy?: string,
-     *     cert_path?: string,
-     *     verify?: bool,
-     *     scopes?: array<string>,
-     *     enable_pkce?: bool,
-     *     enable_nonce?: bool,
-     *     allow_implicit_flow?: bool,
-     *     code_challenge_method?: string,
-     *     timeout?: int,
-     *     leeway?: int,
-     *     redirect_uri?: int,
-     *     response_types?: array<string>,
-     *     authorization_endpoint?: string,
-     *     authorization_response_iss_parameter_supported?: bool,
-     *     token_endpoint?: string,
-     *     token_endpoint_auth_methods_supported?: array<string>,
-     *     userinfo_endpoint?: string,
-     *     end_session_endpoint?: string,
-     *     registration_endpoint?: string,
-     *     introspect_endpoint?: string,
-     *     revocation_endpoint?: string,
-     *     jwt_signing_method?: 'sha256'|'sha384'|'sha512',
-     *     jwt_key?: string,
-     *     jwt_signing_key?: string,
-     *     jwt_plain_key?: bool
-     * } $user_config Config for the OIDC Client.
-     * The missing config values will be retrieved from the provider via auto-discovery if the `provider_url` exists
-     * and the auto-discovery endpoint is supported.
-     *
-     */
-    public function __construct(array $user_config)
+    public function __construct()
     {
-        $user_config = array_filter($user_config, static fn ($value) => !is_null($value));
+        $this->redirectUri(Request::capture()->url());
+    }
 
-        $this->http_client = (new Factory())->withOptions([
-            'connect_timeout' => Arr::get($user_config, 'timeout', 0),
-            'proxy' => Arr::get($user_config, 'http_proxy'),
-            'verify' => Arr::get($user_config, 'verify', true) ?: Arr::get($user_config, 'cert_path', false)
-        ]);
+    public function __call(string $name, array $arguments): self
+    {
+        $property = Str::snake($name);
+        if (property_exists($this, $property) && $arguments > 0) {
+            $value = $arguments[0];
+            $value = match ($property) {
+                'provider_url' => $this->trimDiscoveryPath(rtrim($value, '/')),
+                'scopes', 'response_types' => [...$arguments],
+                default => $value
+            };
 
-        $provider_url = rtrim(Arr::get($user_config, 'provider_url'), '/');
-        $query_params = Arr::get($user_config, 'well_known_request_params');
-
-        $config = $this->autoDiscovery($provider_url, $query_params)?->merge($user_config) ?? collect($user_config);
-
-        $provider_url = $this->trimDiscoveryPath($provider_url);
-
-        $props = [
-            'client_id' => null,
-            'client_secret' => null,
-            'issuer' => $provider_url,
-            'scopes' => [],
-            'enable_pkce' => true,
-            'enable_nonce' => true,
-            'allow_implicit_flow' => false,
-            'code_challenge_method' => 'plain',
-            'leeway' => 300,
-            'redirect_uri' => $this->getCurrentURL(),
-            'response_types' => [],
-            'authorization_endpoint' => null,
-            'authorization_response_iss_parameter_supported' => false,
-            'token_endpoint' => null,
-            'token_endpoint_auth_methods_supported' => ['client_secret_basic'],
-            'userinfo_endpoint' => null,
-            'end_session_endpoint' => null,
-            'registration_endpoint' => null,
-            'introspect_endpoint' => null,
-            'revocation_endpoint' => null,
-            'jwt_signing_method' => 'HS256',
-            'jwt_key' => Arr::get($config, 'client_secret'),
-            'jwt_signing_key' => null,
-            'jwt_plain_key' => false
-        ];
-        foreach ($props as $prop => $default) {
-            $this->{$prop} = $config->get($prop, $default);
-        }
-
-        if (empty($this->code_challenge_method)) {
-            $methods = $config->get('code_challenge_methods_supported', []);
-            if (in_array('S256', $methods, true)) {
-                $this->code_challenge_method = 'S256';
-            } else {
-                $this->code_challenge_method = 'plain';
+            if ($property === 'provider_url') {
+                $this->issuer($value);
             }
+
+            $this->{$property} = $value;
         }
+        return $this;
+    }
+
+    public function endpoints(
+        ?string $authorization = null,
+        ?string $token = null,
+        ?string $userinfo = null,
+        ?string $end_session = null,
+        ?string $registration = null,
+        ?string $introspect = null,
+        ?string $revocation = null,
+        ?string $jwks = null,
+        #[ArrayShape([
+            'authorization_response_iss_parameter_supported' => 'bool',
+            'token_endpoint_auth_methods_supported' => 'Maicol07\OpenIDConnect\ClientAuthMethod[]',
+        ])] array $options = []
+    ): self {
+        $this->authorization_endpoint = $authorization;
+        $this->token_endpoint = $token;
+        $this->userinfo_endpoint = $userinfo;
+        $this->end_session_endpoint = $end_session;
+        $this->registration_endpoint = $registration;
+        $this->introspect_endpoint = $introspect;
+        $this->revocation_endpoint = $revocation;
+        $this->jwk_endpoint = $jwks;
+
+        $this->authorization_response_iss_parameter_supported = $options['authorization_response_iss_parameter_supported'] ?? false;
+        $this->token_endpoint_auth_methods_supported = $options['token_endpoint_auth_methods_supported'] ?? [];
+        return $this;
     }
 
     /**
@@ -235,6 +219,39 @@ class Client
         $this->redirect($endpoint);
     }
 
+
+    /**
+     * Request RFC8693 Token Exchange
+     * https://datatracker.ietf.org/doc/html/rfc8693
+     */
+    public function requestTokenExchange(string $subjectToken, string $subjectTokenType, string $audience = ''): Collection
+    {
+        $grant_type = 'urn:ietf:params:oauth:grant-type:token-exchange';
+
+        $data = [
+            'grant_type' => $grant_type,
+            'subject_token_type' => $subjectTokenType,
+            'subject_token' => $subjectToken,
+            'client_id' => $this->client_id,
+            'client_secret' => $this->client_secret,
+            'scope' => $this->getScopeString()
+        ];
+
+        $client = $this->client();
+
+        if (!empty($audience)) {
+            $data['audience'] = $audience;
+        }
+
+        # Consider Basic authentication if provider config is set this way
+        if (in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)) {
+            $client = $client->withBasicAuth($this->client_id, $this->client_secret);
+            unset($data['client_secret'], $data['client_id']);
+        }
+
+        return $client->post($this->token_endpoint, $data)->collect();
+    }
+
     /**
      * Returns the user info
      *
@@ -242,7 +259,7 @@ class Client
      */
     public function getUserInfo(): UserInfo
     {
-        $response = $this->http_client->withToken($this->access_token)
+        $response = (new Factory())->withToken($this->access_token)
             ->acceptJson()
             ->get($this->userinfo_endpoint, ['schema' => 'openid']);
 
@@ -262,17 +279,28 @@ class Client
         exit;
     }
 
-    /** @noinspection GlobalVariableUsageInspection */
-    public function getCurrentURL(): string
-    {
-        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] === 443)
-            ? "https://"
-            : "http://";
-        return $protocol . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-    }
-
     public function getClientCredentials(): array
     {
         return [$this->client_id, $this->client_secret];
+    }
+
+    private function client(): PendingRequest
+    {
+        return (new Factory())
+            ->withOptions([
+                'connect_timeout' => $this->timeout,
+                'proxy' => $this->http_proxy,
+                'verify' => ($this->verify_ssl ?: $this->cert_path) ?? false
+            ]);
+    }
+
+    /**
+     * @param array<string|Scope> $additional_scopes
+     * @return string
+     */
+    private function getScopeString(array $additional_scopes = []): string
+    {
+        $scopes = array_merge($this->scopes, $additional_scopes);
+        return implode(' ', array_map(static fn (string|Scope $scope) => $scope instanceof Scope ? $scope->value : $scope, $scopes));
     }
 }

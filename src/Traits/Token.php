@@ -21,6 +21,7 @@ namespace Maicol07\OpenIDConnect\Traits;
 use cse\helpers\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Maicol07\OpenIDConnect\ClientAuthMethod;
 use Maicol07\OpenIDConnect\ClientException;
 
 trait Token
@@ -28,7 +29,8 @@ trait Token
     private ?string $introspect_endpoint;
     private ?string $revocation_endpoint;
     private string $token_endpoint;
-    private array $token_endpoint_auth_methods_supported;
+    /** @var ClientAuthMethod[] */
+    private array $token_endpoint_auth_methods_supported = [];
     private ?string $refresh_token;
 
     /**
@@ -46,13 +48,13 @@ trait Token
         ];
 
         if ($send_scopes) {
-            $data['scopes'] = implode(' ', $this->scopes);
+            $data['scopes'] = $this->getScopeString();
         }
 
-        $client = $this->http_client;
+        $client = $this->client();
 
         // Consider Basic authentication if provider config is set this way
-        if (in_array('client_secret_basic', $this->token_endpoint_auth_methods_supported, true)) {
+        if (in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)) {
             $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
@@ -85,7 +87,7 @@ trait Token
         $client_id ??= $this->client_id;
         $client_secret ??= $this->client_secret;
 
-        return $this->http_client
+        return $this->client()
             ->withBasicAuth($client_id, $client_secret)
             ->acceptJson()
             ->post($this->introspect_endpoint, $data)
@@ -112,7 +114,7 @@ trait Token
         $client_id ??= $this->client_id;
         $client_secret ??= $this->client_secret;
 
-        return $this->http_client
+        return $this->client()
             ->withBasicAuth($client_id, $client_secret)
             ->acceptJson()
             ->post($this->revocation_endpoint, $data)
@@ -169,8 +171,8 @@ trait Token
         ];
 
         // Consider Basic authentication if provider config is set this way
-        $client = $this->http_client;
-        if (in_array('client_secret_basic', $this->token_endpoint_auth_methods_supported, true)) {
+        $client = $this->client();
+        if (in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)) {
             $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
