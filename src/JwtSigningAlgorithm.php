@@ -17,7 +17,7 @@
 
 namespace Maicol07\OpenIDConnect;
 
-use Lcobucci\JWT\Signer;
+use Jose\Component\Core\Algorithm;
 
 enum JwtSigningAlgorithm
 {
@@ -31,26 +31,18 @@ enum JwtSigningAlgorithm
     case ES384;
     case ES512;
     case EdDSA;
-    case BLAKE2B;
-
-    public function getSigner(): Signer
+    public function getAlgorithmObject(): Algorithm
     {
-        return match ($this) {
-            self::HS256 => new Signer\Hmac\Sha256(),
-            self::HS384 => new Signer\Hmac\Sha384(),
-            self::HS512 => new Signer\Hmac\Sha512(),
-            self::BLAKE2B => new Signer\Blake2b(),
-            self::RS256 => new Signer\Rsa\Sha256(),
-            self::RS384 => new Signer\Rsa\Sha384(),
-            self::RS512 => new Signer\Rsa\Sha512(),
-            self::ES256 => Signer\Ecdsa\Sha256::create(),
-            self::ES384 => Signer\Ecdsa\Sha384::create(),
-            self::ES512 => Signer\Ecdsa\Sha512::create(),
-            self::EdDSA => new Signer\Eddsa()
-        };
+        $class = 'Jose\Component\Signature\Algorithm\\' . $this->name;
+        return new $class();
     }
 
-    public static function fromName(string $name): JwtSigningAlgorithm {
+    public static function tryFromName(string $name): ?self
+    {
+        return defined("self::$name") ? self::fromName($name) : null;
+    }
+    public static function fromName(string $name): self
+    {
         return constant("self::$name");
     }
 }

@@ -1,39 +1,59 @@
 {
-    "name": "maicol07/oidc-client",
-    "description": "OpenID Connect client",
-    "keywords": ["OpenID Connect", "OIDC", "client", "OAuth 2", "SSO", "RFC6749", "RFC7009", "RFC7636", "RFC7662"],
-    "license": "Apache-2.0",
-    "require": {
-        "php": ">=8.1",
-        "ext-json": "*",
-        "ext-mbstring": "*",
-        "cse/helpers-session": "^1",
-        "guzzlehttp/guzzle": "^7",
-        "illuminate/collections": ">=8",
-        "illuminate/http": ">=8",
-        "illuminate/support": ">=8",
-        "lcobucci/clock": "^2",
-        "lcobucci/jwt": "~4.1",
-        "web-token/jwt-core": "^3"
-    },
-    "require-dev": {
-        "roave/security-advisories": "dev-latest",
-        "friendsofphp/php-cs-fixer": "^3",
-        "phpunit/phpunit": "^9",
-        "vlucas/phpdotenv": "^5"
-    },
-    "suggest": {
-        "ext-gmp": "Faster cipher key operations. Please see https://web-token.spomky-labs.com/introduction/pre-requisite",
-        "ext-bcmath": "Faster cipher key operations. Please see https://web-token.spomky-labs.com/introduction/pre-requisite"
-    },
-    "archive" : {
-        "exclude" : [
-            ".*"
-        ]
-    },
-    "autoload" : {
-         "psr-4": {
-           "Maicol07\\OpenIDConnect\\": "src/"
-         }
+  "name": "maicol07/oidc-client",
+  "description": "OpenID Connect client",
+  "keywords": [
+    "OpenID Connect",
+    "OIDC",
+    "client",
+    "OAuth 2",
+    "SSO",
+    "RFC6749",
+    "RFC7009",
+    "RFC7636",
+    "RFC7662"
+  ],
+  "license": "Apache-2.0",
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "cse/helpers-session": "^1",
+    "guzzlehttp/guzzle": "^7",
+    "illuminate/collections": ">=8",
+    "illuminate/http": ">=8",
+    "illuminate/support": ">=8",
+    "web-token/jwt-core": "^3",
+    "web-token/jwt-checker":  "^3",
+    "web-token/jwt-signature": "^3",
+    "web-token/jwt-signature-algorithm-hmac": "^3",
+    "web-token/jwt-signature-algorithm-rsa": "^3",
+    "web-token/jwt-signature-algorithm-ecdsa": "^3",
+    "web-token/jwt-signature-algorithm-eddsa": "^3"
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest",
+    "friendsofphp/php-cs-fixer": "^3",
+    "phpunit/phpunit": "^10",
+    "vlucas/phpdotenv": "^5",
+    "php-webdriver/webdriver": "^1"
+  },
+  "suggest": {
+    "ext-gmp": "Faster cipher key operations. Please see https://web-token.spomky-labs.com/introduction/pre-requisite",
+    "ext-bcmath": "Faster cipher key operations. Please see https://web-token.spomky-labs.com/introduction/pre-requisite"
+  },
+  "archive": {
+    "exclude": [
+      ".*"
+    ]
+  },
+  "autoload": {
+    "psr-4": {
+      "Maicol07\\OpenIDConnect\\": "src/"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Maicol07\\OpenIDConnect\\Tests\\": "tests/"
+    }
+  }
 }

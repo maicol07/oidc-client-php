@@ -22,4 +22,10 @@ enum CodeChallengeMethod: string
     case PLAIN = 'plain';
     case S256 = 'S256';
 
+    public function algorithm(): string {
+        return match ($this) {
+            self::S256 => 'sha256',
+            self::PLAIN => '',
+        };
+    }
 }

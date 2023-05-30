@@ -17,13 +17,11 @@
 
 namespace Maicol07\OpenIDConnect\Traits;
 
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Maicol07\OpenIDConnect\ClientAuthMethod;
 use Maicol07\OpenIDConnect\CodeChallengeMethod;
 use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
 use Maicol07\OpenIDConnect\ResponseType;
-use Maicol07\OpenIDConnect\Scope;
 
 trait AutoDiscovery
 {
@@ -38,41 +36,35 @@ trait AutoDiscovery
             if ($response->ok()) {
                 $config = $response->collect();
 
+                // Response types
                 $response_types = [];
                 $response_types_supported = $config->get('response_types_supported');
                 if ($response_types_supported) {
                     $response_types = collect($response_types_supported)
-                        ->map(fn (string $response_type) => explode(' ', $response_type))
-                        ->reduce(function (array $carry, array $rt) use ($response_types) {
-                            if (count($rt) > count($carry)) {
-                                foreach ($rt as $response_type) {
-                                    $carry[] = ResponseType::from($response_type);
-                                }
-                            }
-                            return $carry;
-                        }, []);
+                        ->map(static fn (string $response_type) => explode(' ', $response_type))
+                        ->map(static fn (array $types) => array_map(static fn (string $type) => ResponseType::from($type), $types))
+                        ->reject(static fn (array $response_type) => $response_type === [ResponseType::NONE])
+                        ->reduce(static fn (array $carry, array $types) => count($types) > count($carry) ? $types : $carry, []);
                 }
+                $this->response_types = empty($this->response_types) ? $response_types : $this->response_types;
+                $this->issuer ??= $config->get('issuer');
 
-                $this->issuer($config->get('issuer'))
-                    ->endpoints(
-                        $config->get('authorization_endpoint'),
-                        $config->get('token_endpoint'),
-                        $config->get('userinfo_endpoint'),
-                        $config->get('end_sesion_endpoint'),
-                        $config->get('registration_endpoint'),
-                        $config->get('introspect_endpoint'),
-                        $config->get('revocation_endpoint'),
-                        $config->get('jwks_uri'),
-                        options: [
-                            'token_endpoint_auth_methods_supported' => array_map(
-                                static fn (string $method) => ClientAuthMethod::from($method),
-                                $config->get('token_endpoint_auth_methods_supported')
-                            ),
-                        ]
-                    )
-                    ->responseType(...$response_types)
-                    ->scopes(...array_map(static fn (string $scope) => Scope::from($scope), $config->get('scopes_supported')))
-                    ->jwtSigningMethod(JwtSigningAlgorithm::from($config->get('id_token_signing_alg_values_supported')[0]));
+                // Endpoints
+                foreach (['authorization', 'token', 'userinfo', 'end_session', 'registration', 'introspect', 'revocation'] as $key) {
+                    $this->{"{$key}_endpoint"} ??= $config->get("{$key}_endpoint");
+                }
+                $this->jwks_endpoint ??= $config->get('jwks_uri');
+
+                $this->token_endpoint_auth_methods_supported = empty($this->token_endpoint_auth_methods_supported) ? array_filter(array_map(
+                    static fn (string $method) => ClientAuthMethod::tryFrom($method),
+                    $config->get('token_endpoint_auth_methods_supported', [])
+                )) : $this->token_endpoint_auth_methods_supported;
+
+                $algorithms = $config->get('id_token_signing_alg_values_supported', []);
+                $this->id_token_signing_alg_values_supported =
+                    empty($this->id_token_signing_alg_values_supported)
+                        ? array_filter(array_map(static fn (string $alg) => JwtSigningAlgorithm::tryFromName($alg), $algorithms))
+                        : $this->id_token_signing_alg_values_supported;
 
                 if ($this->code_challenge_method === CodeChallengeMethod::PLAIN) {
                     $methods = $config->get('code_challenge_methods_supported', []);

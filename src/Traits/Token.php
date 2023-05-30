@@ -21,16 +21,12 @@ namespace Maicol07\OpenIDConnect\Traits;
 use cse\helpers\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use JsonException;
 use Maicol07\OpenIDConnect\ClientAuthMethod;
-use Maicol07\OpenIDConnect\ClientException;
+use Maicol07\OpenIDConnect\OIDCClientException;
 
 trait Token
 {
-    private ?string $introspect_endpoint;
-    private ?string $revocation_endpoint;
-    private string $token_endpoint;
-    /** @var ClientAuthMethod[] */
-    private array $token_endpoint_auth_methods_supported = [];
     private ?string $refresh_token;
 
     /**
@@ -79,7 +75,7 @@ trait Token
         ?string $client_secret = null
     ): Collection
     {
-        $data = ['token' => $token];
+        $data = compact('token');
 
         if ($token_type_hint) {
             $data['token_type_hint'] = $token_type_hint;
@@ -106,7 +102,7 @@ trait Token
         ?string $client_secret = null
     ): Collection
     {
-        $data = ['token' => $token];
+        $data = compact('token');
 
         if ($token_type_hint) {
             $data['token_type_hint'] = $token_type_hint;
@@ -121,6 +117,9 @@ trait Token
             ->collect();
     }
 
+    /**
+     * @throws JsonException
+     */
     private function token(Request $request, string $code): bool
     {
         $token_response = $this->requestTokens($code);
@@ -129,26 +128,20 @@ trait Token
         $error = $token_response->get('error');
         if ($error) {
             $description = $token_response->get('error_description');
-            throw new ClientException($description ?: ('Got response: ' . $error));
+            throw new OIDCClientException($description ?: ('Got response: ' . $error));
         }
 
         // Do an OpenID Connect session check
         if ($request->get('state') !== Session::get('oidc_state')) {
-            throw new ClientException('Unable to determine state');
+            throw new OIDCClientException('Unable to determine state');
         }
         Session::remove('oidc_state');
 
         if (!$token_response->has('id_token')) {
-            throw new ClientException('User did not authorize openid scope.');
+            throw new OIDCClientException('User did not authorize openid scope.');
         }
 
-        $jwt = $this->jwt()->parser()->parse($token_response->get('id_token'));
-        $this->validateJWT($jwt);
-
-        if ($this->enable_nonce && Session::get('oidc_nonce') !== $jwt->claims()->get('nonce')) {
-            throw new ClientException("Generated nonce is not equal to the one returned by the server.");
-        }
-        Session::remove('oidc_nonce');
+        $this->loadAndValidateJWT($token_response->get('id_token'));
 
         $this->id_token = $token_response->get('id_token');
         $this->access_token = $token_response->get('access_token');

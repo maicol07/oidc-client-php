@@ -17,17 +17,14 @@
 
 namespace Maicol07\OpenIDConnect\Traits;
 
-use Maicol07\OpenIDConnect\ClientException;
+use Maicol07\OpenIDConnect\OIDCClientException;
 
 trait DynamicRegistration
 {
-    private string $client_name;
-    private ?string $registration_endpoint;
-
     /**
      * Dynamic registration
      *
-     * @throws ClientException
+     * @throws OIDCClientException
      */
     public function register(?array $params = null): void
     {
@@ -39,7 +36,7 @@ trait DynamicRegistration
 
         $error = $response->get('error_description');
         if ($error) {
-            throw new ClientException($error);
+            throw new OIDCClientException($error);
         }
 
         $this->client_id = $response->get('client_id');
@@ -50,7 +47,7 @@ trait DynamicRegistration
         if ($secret) {
             $this->client_secret = $secret;
         } else {
-            throw new ClientException('Error registering: Please contact the OpenID Connect provider
+            throw new OIDCClientException('Error registering: Please contact the OpenID Connect provider
              and obtain a Client ID and Secret directly from them');
         }
     }

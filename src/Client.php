@@ -26,9 +26,9 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use JetBrains\PhpStorm\ArrayShape;
 use JetBrains\PhpStorm\NoReturn;
+use Jose\Component\Core\JWK;
+use Jose\Component\Core\JWKSet;
 use Maicol07\OpenIDConnect\Traits\Authorization;
 use Maicol07\OpenIDConnect\Traits\AutoDiscovery;
 use Maicol07\OpenIDConnect\Traits\DynamicRegistration;
@@ -36,28 +36,6 @@ use Maicol07\OpenIDConnect\Traits\ImplictFlow;
 use Maicol07\OpenIDConnect\Traits\JWT;
 use Maicol07\OpenIDConnect\Traits\Token;
 
-/**
- * @method $this clientId(string $client_id)
- * @method $this clientSecret(string $client_secret)
- * @method $this providerUrl(string $provider_url)
- * @method $this issuer(string $issuer)
- * @method $this scopes(string|Scope ...$scopes)
- * @method $this redirectUri(string $redirect_uri)
- * @method $this enablePkce(bool $enable_pkce)
- * @method $this enableNonce(bool $enable_nonce)
- * @method $this allowImplicitFlow(bool $allow_implcit_flow)
- * @method $this codeChallengeMethod(CodeChallengeMethod $code_challenge_method)
- * @method $this leeway(int $leeway)
- * @method $this responseType(ResponseType ...$response_type)
- * @method $this jwtSigningAlgorithm(JwtSigningAlgorithm $jwt_signing_algorithm)
- * @method $this jwtSigningKey(string $jwt_signing_key)
- * @method $this jwk(array $jwk)
- *
- * @method $this httpProxy(string $proxy)
- * @method $this certPath(string $cert_path)
- * @method $this verifySsl(bool $verify_ssl)
- * @method $this timeout(int $timeout)
- */
 class Client
 {
     use Authorization;
@@ -67,90 +45,102 @@ class Client
     use ImplictFlow;
     use JWT;
 
-    private string $client_id;
-    private string $client_secret;
-    private ?string $provider_url = null;
-    private ?string $issuer = null;
-    /** @var array<string|Scope> */
-    private array $scopes = [Scope::OPENID];
-    private string $redirect_uri;
-    private bool $enable_pkce = true;
-    private bool $enable_nonce = true;
-    /**
-     * Holds code challenge method for PKCE mode
-     * @see https://tools.ietf.org/html/rfc7636
-     */
-    private CodeChallengeMethod $code_challenge_method = CodeChallengeMethod::PLAIN;
-
-    private ?string $http_proxy = null;
-    private ?string $cert_path = null;
-    private bool $verify_ssl = true;
-    private int $timeout = 0;
-
-
     private string $access_token;
     private string $id_token;
-    // Endpoints
-    private string $userinfo_endpoint;
-    private ?string $end_session_endpoint;
 
-    public function __construct()
-    {
-        $this->redirectUri(Request::capture()->url());
+    /**
+     * @param string $client_id
+     * @param string $client_secret
+     * @param string|null $provider_url
+     * @param string|null $issuer
+     * @param array<string|Scope> $scopes
+     * @param string|null $redirect_uri
+     * @param bool $enable_pkce
+     * @param bool $enable_nonce
+     * @param bool $allowImplicitFlow
+     * @param CodeChallengeMethod $code_challenge_method Code challenge method for PKCE mode - @see https://tools.ietf.org/html/rfc7636
+     * @param int $leeway
+     * @param ResponseType[] $response_types
+     * @param JwtSigningAlgorithm[] $id_token_signing_alg_values_supported
+     * @param string|JWK|null $jwt_verification_key Public key used to sign the JWT. Only needed if signing method is set to RSXXX or ECXXX.
+     * @param string|null $jwt_signing_key Private key used to verify the JWT signature. Only needed if signing method is set to RSXXX or ECXXX.
+     * @param string|null $authorization_endpoint
+     * @param string|null $token_endpoint
+     * @param string|null $userinfo_endpoint
+     * @param string|null $end_session_endpoint
+     * @param string|null $registration_endpoint
+     * @param string|null $introspect_endpoint
+     * @param string|null $revocation_endpoint
+     * @param string|null $jwks_endpoint
+     * @param bool $authorization_response_iss_parameter_supported
+     * @param ClientAuthMethod[] $token_endpoint_auth_methods_supported
+     * @param string|null $http_proxy
+     * @param string|null $cert_path
+     * @param bool $verify_ssl
+     * @param int $timeout
+     * @param string $client_name
+     * @param bool $allow_implicit_flow Allow OAuth 2 implicit flow. - @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
+     * @param string|null $jwt_key Symmetric JWT key used to decode the token (can be plain text or base64 encoded). Defaults to client secret
+     * @param bool $jwt_base64_encoded_key Whether the key is base64 encoded
+     * @param JWKSet|null $jwks
+     */
+    public function __construct(
+        public string $client_id,
+        public string $client_secret,
+        public readonly ?string $provider_url = null,
+        public ?string $issuer = null,
+        public readonly array $scopes = [Scope::OPENID],
+        public ?string $redirect_uri = null,
+        public readonly bool $enable_pkce = true,
+        public readonly bool $enable_nonce = true,
+        public readonly bool $allowImplicitFlow = false,
+        public CodeChallengeMethod $code_challenge_method = CodeChallengeMethod::PLAIN,
+        public readonly int $leeway = 300,
+        public array $response_types = [],
+        public array $id_token_signing_alg_values_supported = [],
+        public string|JWK|null $jwt_verification_key = null,
+        public ?string $jwt_signing_key = null,
+        public ?string $authorization_endpoint = null,
+        public ?string $token_endpoint = null,
+        public ?string $userinfo_endpoint = null,
+        public ?string $end_session_endpoint = null,
+        public ?string $registration_endpoint = null,
+        public ?string $introspect_endpoint = null,
+        public ?string $revocation_endpoint = null,
+        public ?string $jwks_endpoint = null,
+        public bool $authorization_response_iss_parameter_supported = false,
+        public array $token_endpoint_auth_methods_supported = [],
+        public readonly ?string $http_proxy = null,
+        public readonly ?string $cert_path = null,
+        public readonly bool $verify_ssl = true,
+        public readonly int $timeout = 0,
+        public readonly string $client_name = 'OpenID Connect Client',
+        public readonly bool $allow_implicit_flow = false,
+        public readonly ?string $jwt_key = null,
+        public readonly bool $jwt_base64_encoded_key = false,
+        public ?JWKSet $jwks = null
+    ) {
+        $this->redirect_uri ??= Request::capture()->url();
+        $this->autoDiscovery($this->provider_url);
     }
 
-    public function __call(string $name, array $arguments): self
+    public function __set(string $name, mixed $value): void
     {
-        $property = Str::snake($name);
-        if (property_exists($this, $property) && $arguments > 0) {
-            $value = $arguments[0];
-            $value = match ($property) {
-                'provider_url' => $this->trimDiscoveryPath(rtrim($value, '/')),
-                'scopes', 'response_types' => [...$arguments],
-                default => $value
-            };
+        $value = match ($name) {
+            'provider_url' => $this->trimDiscoveryPath(rtrim($value, '/')),
+            default => $value
+        };
+        $this->{$name} = $value;
 
-            if ($property === 'provider_url') {
-                $this->issuer($value);
-            }
-
-            $this->{$property} = $value;
+        if ($name === 'provider_url') {
+            $this->issuer = $value;
         }
-        return $this;
-    }
-
-    public function endpoints(
-        ?string $authorization = null,
-        ?string $token = null,
-        ?string $userinfo = null,
-        ?string $end_session = null,
-        ?string $registration = null,
-        ?string $introspect = null,
-        ?string $revocation = null,
-        ?string $jwks = null,
-        #[ArrayShape([
-            'authorization_response_iss_parameter_supported' => 'bool',
-            'token_endpoint_auth_methods_supported' => 'Maicol07\OpenIDConnect\ClientAuthMethod[]',
-        ])] array $options = []
-    ): self {
-        $this->authorization_endpoint = $authorization;
-        $this->token_endpoint = $token;
-        $this->userinfo_endpoint = $userinfo;
-        $this->end_session_endpoint = $end_session;
-        $this->registration_endpoint = $registration;
-        $this->introspect_endpoint = $introspect;
-        $this->revocation_endpoint = $revocation;
-        $this->jwk_endpoint = $jwks;
-
-        $this->authorization_response_iss_parameter_supported = $options['authorization_response_iss_parameter_supported'] ?? false;
-        $this->token_endpoint_auth_methods_supported = $options['token_endpoint_auth_methods_supported'] ?? [];
-        return $this;
     }
 
     /**
      * Authenticate the user
      *
-     * @throws ClientException
+     * @throws OIDCClientException
      * @throws Exception
      */
     public function authenticate(): bool
@@ -159,7 +149,7 @@ class Client
 
         $this->validateCallback($request);
 
-        // If we have an authorization code then proceed to request a token
+        // If we have an authorization code, then proceed to request a token.
         $code = $request->get('code');
         if ($code) {
             return $this->token($request, $code);
@@ -180,13 +170,13 @@ class Client
         if ($this->authorization_response_iss_parameter_supported && $request->hasAny(['error', 'code', 'id_token'])
             && $request->get('iss') === $this->issuer
         ) {
-            throw new ClientException('Error: validation of iss response parameter failed');
+            throw new OIDCClientException('Error: validation of iss response parameter failed');
         }
 
         // Do a preemptive check to see if the provider has thrown an error from a previous redirect.
         if ($request->has('error')) {
             $description = ' Description: ' . $request->get('error_description', 'No description provided');
-            throw new ClientException('Error: ' . $request->get('error') . $description);
+            throw new OIDCClientException('Error: ' . $request->get('error') . $description);
         }
     }
 
@@ -195,7 +185,7 @@ class Client
      * Connect provider that the end-user has logged out of the relying party site
      * (the client application).
      *
-     * @param string $id_token ID token (obtained at login)
+     * @param string $id_token ID token (got at login)
      * @param string|null $redirect URL to which the RP is requesting that the End-User's User Agent
      * be redirected after a logout has been performed. The value MUST have been previously
      * registered with the OP. Value can be null.
@@ -224,8 +214,11 @@ class Client
      * Request RFC8693 Token Exchange
      * https://datatracker.ietf.org/doc/html/rfc8693
      */
-    public function requestTokenExchange(string $subjectToken, string $subjectTokenType, string $audience = ''): Collection
-    {
+    public function requestTokenExchange(
+        string $subjectToken,
+        string $subjectTokenType,
+        string $audience = ''
+    ): Collection {
         $grant_type = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
         $data = [
@@ -255,7 +248,7 @@ class Client
     /**
      * Returns the user info
      *
-     * @throws ClientException
+     * @throws OIDCClientException
      */
     public function getUserInfo(): UserInfo
     {
@@ -264,7 +257,7 @@ class Client
             ->get($this->userinfo_endpoint, ['schema' => 'openid']);
 
         if (!$response->ok()) {
-            throw new ClientException(
+            throw new OIDCClientException(
                 'The communication to retrieve user data has failed with status code ' . $response->body()
             );
         }
@@ -284,6 +277,7 @@ class Client
         return [$this->client_id, $this->client_secret];
     }
 
+    /** @noinspection PhpIncompatibleReturnTypeInspection - False positive */
     private function client(): PendingRequest
     {
         return (new Factory())
@@ -300,7 +294,10 @@ class Client
      */
     private function getScopeString(array $additional_scopes = []): string
     {
-        $scopes = array_merge($this->scopes, $additional_scopes);
-        return implode(' ', array_map(static fn (string|Scope $scope) => $scope instanceof Scope ? $scope->value : $scope, $scopes));
+        $scopes = [...$this->scopes, ...$additional_scopes];
+        return implode(
+            ' ',
+            array_map(static fn(string|Scope $scope) => $scope instanceof Scope ? $scope->value : $scope, $scopes)
+        );
     }
 }

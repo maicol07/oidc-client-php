@@ -4,7 +4,7 @@ namespace Maicol07\OpenIDConnect;
 
 use RuntimeException;
 
-class ClientException extends RuntimeException
+class OIDCClientException extends RuntimeException
 {
 
 }

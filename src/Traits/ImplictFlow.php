@@ -19,32 +19,25 @@ namespace Maicol07\OpenIDConnect\Traits;
 
 use cse\helpers\Session;
 use Illuminate\Http\Request;
-use Maicol07\OpenIDConnect\ClientException;
+use JsonException;
+use Maicol07\OpenIDConnect\OIDCClientException;
 
 trait ImplictFlow
 {
-    /** Allow OAuth 2 implicit flow.
-     * @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
+    /**
+     * @throws JsonException
      */
-    private bool $allow_implicit_flow = false;
-
     private function implictFlow(Request $request, string $id_token): bool
     {
         $this->access_token = $request->get('access_token');
 
         // Do an OpenID Connect session check
         if ($request->get('state') !== Session::get('oidc_state')) {
-            throw new ClientException('Unable to determine state');
+            throw new OIDCClientException('Unable to determine state');
         }
         Session::remove('oidc_state');
 
-        $jwt = $this->jwt()->parser()->parse($id_token);
-        $this->validateJWT($jwt);
-
-        if ($this->enable_nonce && Session::get('oidc_nonce') !== $jwt->claims()->get('nonce')) {
-            throw new ClientException("Generated nonce is not equal to the one returned by the server.");
-        }
-        Session::remove('oidc_nonce');
+        $this->loadAndValidateJWT($id_token);
 
         // Save the id token
         $this->id_token = $id_token;
