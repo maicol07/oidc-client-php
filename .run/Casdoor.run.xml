@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Casdoor" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
+    <CommandLine>
+      <envs>
+        <env name="OIDC_AUTHORIZATION_PASSWORD" value="123" />
+        <env name="OIDC_AUTHORIZATION_PASSWORD_FIELD_SELECTOR_D" value="#normal_login_password" />
+        <env name="OIDC_AUTHORIZATION_USERNAME" value="admin" />
+        <env name="OIDC_AUTHORIZATION_USERNAME_FIELD_SELECTOR" value="#input" />
+        <env name="OIDC_BROWSER" value="chrome" />
+        <env name="OIDC_CASDOOR_AIO" value="true" />
+        <env name="OIDC_CLIENT_ID" value="76598bb669788bebc0a5" />
+        <env name="OIDC_CLIENT_SECRET" value="50014e8a88fad48eb1747b6f3c6ccdf2c6e3254e" />
+        <env name="OIDC_CODE_CHALLENGE_METHOD" value="S256" />
+        <env name="OIDC_ENABLE_PKCE" value="false" />
+        <env name="OIDC_PROVIDER_URL" value="http://localhost:8000" />
+        <env name="OIDC_REDIRECT_URI" value="http://localhost:9000/callback" />
+      </envs>
+    </CommandLine>
+    <TestRunner class="Maicol07\OpenIDConnect\Tests\ClientTest" directory="$PROJECT_DIR$/tests" file="$PROJECT_DIR$/tests/ClientTest.php" method="testAuthorizationUrLGeneration" scope="Class" />
+    <method v="2" />
+  </configuration>
+</component>

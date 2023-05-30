@@ -1,4 +1,8 @@
 <?php
+/** @noinspection UnknownInspectionInspection, LaravelFunctionsInspection */
+
+namespace Maicol07\OpenIDConnect\Tests;
+
 /*
  * Copyright 2022 Maicol07 (https://maicol07.it)
  *
@@ -15,17 +19,84 @@
  * limitations under the License.
  */
 
+use Facebook\WebDriver\Remote\DesiredCapabilities;
+use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Maicol07\OpenIDConnect\Client;
+use Maicol07\OpenIDConnect\CodeChallengeMethod;
+use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
+use Maicol07\OpenIDConnect\Scope;
+use ReflectionClass;
+use ReflectionException;
+
+require_once __DIR__ . '/../vendor/autoload.php';
 
 abstract class TestCase extends \PHPUnit\Framework\TestCase
 {
+    private Client $client;
+    private RemoteWebDriver $webdriver;
     protected function client(): Client {
-        $oidc = (new Client())
-            ->providerUrl(env('OIDC_PROVIDER_URL'))
-            ->clientId(env('OIDC_CLIENT_ID'))
-            ->clientSecret(env('OIDC_CLIENT_SECRET'))
-            ->redirectUri(env('OIDC_REDIRECT_URI'));
-        $this->assertInstanceOf(Client::class, $oidc);
-        return $oidc;
+        $this->client ??= new Client(
+            client_id: env('OIDC_CLIENT_ID'),
+            client_secret: env('OIDC_CLIENT_SECRET'),
+            provider_url: env('OIDC_PROVIDER_URL'),
+            scopes: [Scope::OPENID, Scope::EMAIL, Scope::PROFILE],
+            redirect_uri: env('OIDC_REDIRECT_URI'),
+            enable_pkce: env('OIDC_ENABLE_PKCE'),
+            code_challenge_method: env('OIDC_CODE_CHALLENGE_METHOD') === 'S256' ? CodeChallengeMethod::S256 : CodeChallengeMethod::PLAIN,
+//            jwt_signing_algorithm: JwtSigningAlgorithm::tryFromName(env('OIDC_JWT_SIGNING_ALGORITHM', '')),
+            jwt_key: env('OIDC_JWT_KEY'),
+        );
+        $this->assertInstanceOf(Client::class, $this->client);
+        return $this->client;
+    }
+
+    public function webdriver(?string $browser = null): RemoteWebDriver {
+        if ($browser === null) {
+            $browser = env('OIDC_BROWSER');
+        }
+
+        $capability = match ($browser) {
+            'chrome' => DesiredCapabilities::chrome(),
+            'firefox' => DesiredCapabilities::firefox(),
+            default => DesiredCapabilities::microsoftEdge(),
+        };
+
+        $driver = RemoteWebDriver::create(env('OIDC_SELENIUM_URL', 'http://localhost:4444'), $capability);
+
+        $this->webdriver ??= $driver;
+        if ($this->webdriver->getCapabilities()->getBrowserName() === $capability->getBrowserName()) {
+            $this->webdriver = $driver;
+        }
+
+        return $this->webdriver;
+    }
+
+    /**
+     * Call protected/private method of a class.
+     *
+     * @param object &$object Instantiated object that we will run method on.
+     * @param string $methodName Method name to call
+     * @param array $parameters Array of parameters to pass into method.
+     *
+     * @return mixed Method return.
+     * @throws ReflectionException
+     */
+    public function invokeMethod(string|object $object, string $methodName, array $parameters = []): mixed
+    {
+        $reflection = new ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        /** @noinspection PhpExpressionResultUnusedInspection */
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($object, $parameters);
+    }
+
+    public function getProperty(object $object, string $propertyName): mixed
+    {
+        $reflection = new ReflectionClass(get_class($object));
+        $property = $reflection->getProperty($propertyName);
+//        /** @noinspection PhpExpressionResultUnusedInspection */
+//        $property->setAccessible(true);
+        return $property->getValue($object);
     }
 }
