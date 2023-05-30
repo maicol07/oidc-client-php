@@ -254,7 +254,8 @@ class Client
      */
     public function getUserInfo(): UserInfo
     {
-        $response = (new Factory())->withToken($this->access_token)
+        $response = $this->client()
+            ->withToken($this->access_token)
             ->acceptJson()
             ->get($this->userinfo_endpoint, ['schema' => 'openid']);
 
