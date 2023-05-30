@@ -1,0 +1,26 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Keycloak Dynamic Registration" type="PHPUnitRunConfigurationType" factoryName="PHPUnit">
+    <CommandLine>
+      <envs>
+        <env name="OIDC_AUTHORIZATION_PASSWORD" value="admin" />
+        <env name="OIDC_AUTHORIZATION_PASSWORD_FIELD_SELECTOR_D" value="#password" />
+        <env name="OIDC_AUTHORIZATION_USERNAME" value="admin" />
+        <env name="OIDC_AUTHORIZATION_USERNAME_FIELD_SELECTOR" value="#username" />
+        <env name="OIDC_BROWSER" value="chrome" />
+        <env name="OIDC_CLIENT_NAME" value="OIDC Client PHP" />
+        <env name="OIDC_CODE_CHALLENGE_METHOD" value="S256" />
+        <env name="OIDC_ENABLE_PKCE" value="false" />
+        <env name="OIDC_PROVIDER_URL" value="http://localhost:8080/realms/master" />
+        <env name="OIDC_REDIRECT_URI" value="http://localhost:9000/callback" />
+      </envs>
+    </CommandLine>
+    <TestRunner class="Maicol07\OpenIDConnect\Tests\ClientTest" file="$PROJECT_DIR$/tests/ClientTest.php" method="testDynamicRegistration" scope="Method">
+      <test_patterns>
+        <composite_test_pattern class_fqn="Maicol07\OpenIDConnect\Tests\ClientTest" file_path="$PROJECT_DIR$/tests/ClientTest.php" method_name="testAuthorizationUrlGeneration" />
+        <composite_test_pattern class_fqn="Maicol07\OpenIDConnect\Tests\ClientTest" file_path="$PROJECT_DIR$/tests/ClientTest.php" method_name="testAuthorization" />
+        <composite_test_pattern class_fqn="Maicol07\OpenIDConnect\Tests\ClientTest" file_path="$PROJECT_DIR$/tests/ClientTest.php" method_name="testImplicitFlow" />
+      </test_patterns>
+    </TestRunner>
+    <method v="2" />
+  </configuration>
+</component>

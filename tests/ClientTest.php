@@ -155,4 +155,12 @@ class ClientTest extends TestCase
         dump($user);
         return true;
     }
+
+    public function testDynamicRegistration(): void {
+        $this->client()->register();
+        dump($this->client()->client_id, $this->client()->client_secret);
+
+        $this->assertIsString($this->client()->client_id);
+        $this->assertIsString($this->client()->client_secret);
+    }
 }

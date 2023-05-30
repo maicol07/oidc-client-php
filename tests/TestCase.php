@@ -43,6 +43,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
             redirect_uri: env('OIDC_REDIRECT_URI'),
             enable_pkce: env('OIDC_ENABLE_PKCE'),
             code_challenge_method: env('OIDC_CODE_CHALLENGE_METHOD') === 'S256' ? CodeChallengeMethod::S256 : CodeChallengeMethod::PLAIN,
+            client_name: env('OIDC_CLIENT_NAME'),
             allow_implicit_flow: env('OIDC_ALLOW_IMPLICIT_FLOW', false),
         );
         $this->assertInstanceOf(Client::class, $this->client);
