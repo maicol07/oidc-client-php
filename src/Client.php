@@ -121,18 +121,20 @@ class Client
         public ?JWKSet $jwks = null
     ) {
         $this->redirect_uri ??= Request::capture()->url();
+        $this->issuer ??= $this->provider_url;
         $this->autoDiscovery($this->provider_url);
     }
 
     public function __set(string $name, mixed $value): void
     {
+        $old_value = $this->{$name};
         $value = match ($name) {
             'provider_url' => $this->trimDiscoveryPath(rtrim($value, '/')),
             default => $value
         };
         $this->{$name} = $value;
 
-        if ($name === 'provider_url') {
+        if ($name === 'provider_url' && $old_value !== $this->issuer) {
             $this->issuer = $value;
         }
     }
