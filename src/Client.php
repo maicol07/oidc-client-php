@@ -27,12 +27,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use JetBrains\PhpStorm\NoReturn;
-use Jose\Component\Core\JWK;
 use Jose\Component\Core\JWKSet;
 use Maicol07\OpenIDConnect\Traits\Authorization;
 use Maicol07\OpenIDConnect\Traits\AutoDiscovery;
 use Maicol07\OpenIDConnect\Traits\DynamicRegistration;
-use Maicol07\OpenIDConnect\Traits\ImplictFlow;
+use Maicol07\OpenIDConnect\Traits\ImplicitFlow;
 use Maicol07\OpenIDConnect\Traits\JWT;
 use Maicol07\OpenIDConnect\Traits\Token;
 
@@ -42,7 +41,7 @@ class Client
     use Token;
     use AutoDiscovery;
     use DynamicRegistration;
-    use ImplictFlow;
+    use ImplicitFlow;
     use JWT;
 
     private string $access_token;
@@ -57,13 +56,10 @@ class Client
      * @param string|null $redirect_uri
      * @param bool $enable_pkce
      * @param bool $enable_nonce
-     * @param bool $allowImplicitFlow
      * @param CodeChallengeMethod $code_challenge_method Code challenge method for PKCE mode - @see https://tools.ietf.org/html/rfc7636
      * @param int $leeway
      * @param ResponseType[] $response_types
      * @param JwtSigningAlgorithm[] $id_token_signing_alg_values_supported
-     * @param string|JWK|null $jwt_verification_key Public key used to sign the JWT. Only needed if signing method is set to RSXXX or ECXXX.
-     * @param string|null $jwt_signing_key Private key used to verify the JWT signature. Only needed if signing method is set to RSXXX or ECXXX.
      * @param string|null $authorization_endpoint
      * @param string|null $token_endpoint
      * @param string|null $userinfo_endpoint
@@ -80,8 +76,6 @@ class Client
      * @param int $timeout
      * @param string $client_name
      * @param bool $allow_implicit_flow Allow OAuth 2 implicit flow. - @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
-     * @param string|null $jwt_key Symmetric JWT key used to decode the token (can be plain text or base64 encoded). Defaults to client secret
-     * @param bool $jwt_base64_encoded_key Whether the key is base64 encoded
      * @param JWKSet|null $jwks
      */
     public function __construct(
@@ -93,13 +87,10 @@ class Client
         public ?string $redirect_uri = null,
         public readonly bool $enable_pkce = true,
         public readonly bool $enable_nonce = true,
-        public readonly bool $allowImplicitFlow = false,
         public CodeChallengeMethod $code_challenge_method = CodeChallengeMethod::PLAIN,
         public readonly int $leeway = 300,
         public array $response_types = [],
         public array $id_token_signing_alg_values_supported = [],
-        public string|JWK|null $jwt_verification_key = null,
-        public ?string $jwt_signing_key = null,
         public ?string $authorization_endpoint = null,
         public ?string $token_endpoint = null,
         public ?string $userinfo_endpoint = null,
@@ -116,8 +107,6 @@ class Client
         public readonly int $timeout = 0,
         public readonly string $client_name = 'OpenID Connect Client',
         public readonly bool $allow_implicit_flow = false,
-        public readonly ?string $jwt_key = null,
-        public readonly bool $jwt_base64_encoded_key = false,
         public ?JWKSet $jwks = null
     ) {
         $this->redirect_uri ??= Request::capture()->url();
@@ -159,7 +148,7 @@ class Client
 
         $id_token = $request->get('id_token');
         if ($this->allow_implicit_flow && $id_token) {
-            $this->implictFlow($request, $id_token);
+            $this->implicitFlow($request, $id_token);
         }
 
         $this->requestAuthorization();

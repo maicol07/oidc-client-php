@@ -22,12 +22,12 @@ use Illuminate\Http\Request;
 use JsonException;
 use Maicol07\OpenIDConnect\OIDCClientException;
 
-trait ImplictFlow
+trait ImplicitFlow
 {
     /**
      * @throws JsonException
      */
-    private function implictFlow(Request $request, string $id_token): bool
+    private function implicitFlow(Request $request, string $id_token): bool
     {
         $this->access_token = $request->get('access_token');
 
