@@ -79,8 +79,8 @@ class Client
      * @param JWKSet|null $jwks
      */
     public function __construct(
-        public string $client_id,
-        public string $client_secret,
+        public ?string $client_id = null,
+        public ?string $client_secret = null,
         public readonly ?string $provider_url = null,
         public ?string $issuer = null,
         public readonly array $scopes = [Scope::OPENID],
