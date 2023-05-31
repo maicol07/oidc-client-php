@@ -85,7 +85,7 @@ trait Token
 
         return $this->client()
             ->withBasicAuth($client_id, $client_secret)
-            ->acceptJson()
+            ->asForm()
             ->post($this->introspect_endpoint, $data)
             ->collect();
     }
