@@ -85,6 +85,10 @@ class ClientTest extends TestCase
 
     #[Depends('testAuthorization')]
     public function testToken(array $params): Client {
+        if ($this->client()->allow_implicit_flow) {
+            $this->markTestSkipped('Implicit flow is enabled.');
+        }
+
         if (env('OIDC_CODE_VERIFIER')) {
             Session::set('oidc_code_verifier', env('OIDC_CODE_VERIFIER'));
         }
@@ -109,9 +113,9 @@ class ClientTest extends TestCase
     }
 
     #[Depends('testAuthorization')]
-    public function testImplicitFlow(array $params): void {
+    public function testImplicitFlow(array $params): Client {
         if (!$this->client()->allow_implicit_flow) {
-            return;
+            $this->markTestSkipped('Implicit flow is disabled.');
         }
 
         if (env('OIDC_STATE')) {
@@ -144,13 +148,24 @@ class ClientTest extends TestCase
         $this->assertIsString($id_token);
 
         dump("Tokens:\nAccess token: $access_token\nID token: $id_token");
+        return $this->client();
     }
-
 
     #[Depends('testToken')]
     public function testUserInfo(Client $client): bool {
         $user = $client->getUserInfo();
         $this->assertIsString($user->id_token);
+        $this->assertIsString($user->sub);
+
+        dump($user);
+        return true;
+    }
+
+    #[Depends('testImplicitFlow')]
+    public function testUserInfoImplicitFlow(Client $client): bool {
+        $user = $client->getUserInfo();
+        $this->assertIsString($user->id_token);
+        $this->assertIsString($user->sub);
 
         dump($user);
         return true;
