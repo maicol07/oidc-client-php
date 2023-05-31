@@ -56,7 +56,7 @@ class Client
      * @param bool $enable_pkce Enable PKCE mode. Defaults to true - @see https://tools.ietf.org/html/rfc7636
      * @param bool $enable_nonce Enable nonce. Defaults to true - @see http://openid.net/specs/openid-connect-core-1_0.html#IDToken
      * @param CodeChallengeMethod $code_challenge_method Code challenge method for PKCE mode - @see https://tools.ietf.org/html/rfc7636
-     * @param int $leeway Leeway for JWT validation. Defaults to 300.
+     * @param int $time_drift Time drift in seconds to allow when validating the id token. Defaults to 300.
      * @param ResponseType[] $response_types Response types to use in the authorization request. Defaults to ResponseType::CODE if nothing is set.
      * @param JwtSigningAlgorithm[] $id_token_signing_alg_values_supported Supported JWT signing algorithms (can be empty if you use auto discovery)
      * @param string|null $authorization_endpoint Authorization endpoint of the provider (can be null if you use auto discovery)
@@ -87,7 +87,7 @@ class Client
         public readonly bool $enable_pkce = true,
         public readonly bool $enable_nonce = true,
         public CodeChallengeMethod $code_challenge_method = CodeChallengeMethod::PLAIN,
-        public readonly int $leeway = 300,
+        public readonly int $time_drift = 300,
         public array $response_types = [],
         public array $id_token_signing_alg_values_supported = [],
         public ?string $authorization_endpoint = null,

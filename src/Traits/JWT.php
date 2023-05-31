@@ -48,9 +48,9 @@ trait JWT
     {
         $claimCheckerManager = new ClaimCheckerManager(
             [
-                new Checker\IssuedAtChecker($this->leeway),
-                new Checker\NotBeforeChecker($this->leeway),
-                new Checker\ExpirationTimeChecker($this->leeway),
+                new Checker\IssuedAtChecker($this->time_drift),
+                new Checker\NotBeforeChecker($this->time_drift),
+                new Checker\ExpirationTimeChecker($this->time_drift),
                 new Checker\AudienceChecker($this->client_id),
                 new Checker\IssuerChecker([$this->issuer])
             ]
