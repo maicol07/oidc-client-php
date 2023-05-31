@@ -20,10 +20,9 @@ namespace Maicol07\OpenIDConnect\Tests;
 
 use cse\helpers\Session;
 use Facebook\WebDriver\WebDriverBy;
-use Facebook\WebDriver\WebDriverExpectedCondition;
 use Illuminate\Http\Request;
+use JetBrains\PhpStorm\NoReturn;
 use Maicol07\OpenIDConnect\Client;
-use Maicol07\OpenIDConnect\UserInfo;
 use PHPUnit\Framework\Attributes\Depends;
 
 class ClientTest extends TestCase
@@ -112,6 +111,34 @@ class ClientTest extends TestCase
         return $this->client();
     }
 
+    #[Depends('testToken')]
+    public function testUserInfo(Client $client): bool {
+        $user = $client->getUserInfo();
+        $this->assertIsString($user->id_token);
+        $this->assertIsString($user->sub);
+
+        dump($user);
+        return true;
+    }
+
+    #[NoReturn] #[Depends('testToken')]
+    public function testTokenIntrospection(Client $client): void {
+        if ($client->allow_implicit_flow) {
+            $this->markTestSkipped('Implicit flow is enabled.');
+        }
+        $access_token = $this->getProperty($client, 'access_token');
+        $refresh_token = $this->getProperty($client, 'refresh_token');
+        $id_token = $this->getProperty($client, 'id_token');
+        $result_access_token = $client->introspectToken($access_token);
+        $result_refresh_token = $client->introspectToken($refresh_token);
+        $result_id_token = $client->introspectToken($id_token);
+
+        dump($result_access_token, $result_refresh_token, $result_id_token);
+
+        $this->assertIsBool($result_access_token->get('active'));
+        $this->assertIsBool($result_refresh_token->get('active'));
+        $this->assertIsBool($result_id_token->get('active'));
+    }
     #[Depends('testAuthorization')]
     public function testImplicitFlow(array $params): Client {
         if (!$this->client()->allow_implicit_flow) {
@@ -151,16 +178,6 @@ class ClientTest extends TestCase
         return $this->client();
     }
 
-    #[Depends('testToken')]
-    public function testUserInfo(Client $client): bool {
-        $user = $client->getUserInfo();
-        $this->assertIsString($user->id_token);
-        $this->assertIsString($user->sub);
-
-        dump($user);
-        return true;
-    }
-
     #[Depends('testImplicitFlow')]
     public function testUserInfoImplicitFlow(Client $client): bool {
         $user = $client->getUserInfo();
@@ -169,6 +186,19 @@ class ClientTest extends TestCase
 
         dump($user);
         return true;
+    }
+
+    #[NoReturn] #[Depends('testImplicitFlow')]
+    public function testTokenIntrospectionImplicitFlow(Client $client): void {
+        $access_token = $this->getProperty($client, 'access_token');
+        $id_token = $this->getProperty($client, 'id_token');
+        $result_access_token = $client->introspectToken($access_token);
+        $result_id_token = $client->introspectToken($id_token);
+
+        dump($result_access_token, $result_id_token);
+
+        $this->assertIsBool($result_access_token->get('active'));
+        $this->assertIsBool($result_id_token->get('active'));
     }
 
     public function testDynamicRegistration(): void {
