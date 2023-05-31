@@ -11,7 +11,7 @@
         <env name="OIDC_CLIENT_ID" value="76598bb669788bebc0a5" />
         <env name="OIDC_CLIENT_SECRET" value="50014e8a88fad48eb1747b6f3c6ccdf2c6e3254e" />
         <env name="OIDC_CODE_CHALLENGE_METHOD" value="S256" />
-        <env name="OIDC_ENABLE_PKCE" value="false" />
+        <env name="OIDC_ENABLE_PKCE" value="true" />
         <env name="OIDC_PROVIDER_URL" value="http://localhost:8000" />
         <env name="OIDC_REDIRECT_URI" value="http://localhost:9000/callback" />
       </envs>

@@ -10,7 +10,7 @@
         <env name="OIDC_CLIENT_ID" value="oidc_client_php" />
         <env name="OIDC_CLIENT_SECRET" value="wtmSLsjoLZJl4SGs975f7gyO4i2gIWF3" />
         <env name="OIDC_CODE_CHALLENGE_METHOD" value="S256" />
-        <env name="OIDC_ENABLE_PKCE" value="false" />
+        <env name="OIDC_ENABLE_PKCE" value="true" />
         <env name="OIDC_JWT_KEY" value="d1bbf5f3-4b7c-4381-a609-4b6804d40820" />
         <env name="OIDC_JWT_SIGNING_ALGORITHM" value="HS256" />
         <env name="OIDC_PROVIDER_URL" value="http://localhost:8080/realms/master" />
