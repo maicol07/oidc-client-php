@@ -36,6 +36,7 @@ enum JwtSigningAlgorithm
         return new $class();
     }
 
+    /** @noinspection ReturnTernaryReplacementInspection */
     public static function tryFromName(string $name): ?self
     {
         return defined("self::$name") ? self::fromName($name) : null;

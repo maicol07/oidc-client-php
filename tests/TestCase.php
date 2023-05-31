@@ -45,10 +45,21 @@ use ReflectionException;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+/**
+ * Base test case class
+ */
 abstract class TestCase extends \PHPUnit\Framework\TestCase
 {
+    /** An instance of the client */
     private Client $client;
+    /** An instance of the webdriver */
     private RemoteWebDriver $webdriver;
+
+    /**
+     * Get an instance of the client
+     *
+     * @return Client The client instance
+     */
     protected function client(): Client {
         $this->client ??= new Client(
             client_id: env('OIDC_CLIENT_ID'),
@@ -65,6 +76,13 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         return $this->client;
     }
 
+    /**
+     * Get an instance of the webdriver
+     *
+     * @param string|null $browser The browser to use. Default: env('OIDC_BROWSER')
+     *
+     * @return RemoteWebDriver The webdriver instance
+     */
     public function webdriver(?string $browser = null): RemoteWebDriver {
         if ($browser === null) {
             $browser = env('OIDC_BROWSER');
@@ -89,7 +107,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     /**
      * Call protected/private method of a class.
      *
-     * @param object &$object Instantiated object that we will run method on.
+     * @param string|object $object &$object Instantiated object that we will run method on.
      * @param string $methodName Method name to call
      * @param array $parameters Array of parameters to pass into method.
      *
@@ -106,12 +124,17 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
         return $method->invokeArgs($object, $parameters);
     }
 
+    /**
+     * Get a protected/private property of a class.
+     *
+     * @param object $object An instantiated object that we will run method on.
+     * @param string $propertyName Property name to get
+     * @return mixed Property value.
+     * @throws ReflectionException If the property doesn't exist.
+     */
     public function getProperty(object $object, string $propertyName): mixed
     {
         $reflection = new ReflectionClass(get_class($object));
-        $property = $reflection->getProperty($propertyName);
-//        /** @noinspection PhpExpressionResultUnusedInspection */
-//        $property->setAccessible(true);
-        return $property->getValue($object);
+        return $reflection->getProperty($propertyName)->getValue($object);
     }
 }

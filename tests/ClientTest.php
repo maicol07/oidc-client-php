@@ -1,5 +1,4 @@
-<?php
-/*
+<?php /*
  * Copyright © 2023 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,20 +11,32 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ */ /** @noinspection ForgottenDebugOutputInspection */
+
 /** @noinspection LaravelFunctionsInspection */
 
 namespace Maicol07\OpenIDConnect\Tests;
 
 use cse\helpers\Session;
+use Exception;
+use Facebook\WebDriver\Exception\NoSuchElementException;
+use Facebook\WebDriver\Exception\TimeoutException;
 use Facebook\WebDriver\WebDriverBy;
 use Illuminate\Http\Request;
 use JetBrains\PhpStorm\NoReturn;
 use Maicol07\OpenIDConnect\Client;
 use PHPUnit\Framework\Attributes\Depends;
+use ReflectionException;
 
+/**
+ * OIDC Client tests
+ */
 class ClientTest extends TestCase
 {
+    /**
+     * Tests user authorization URL generation
+     * @throws Exception
+     */
     public function testAuthorizationUrlGeneration(): string {
         $url = $this->client()->getAuthorizationUrl();
         $this->assertIsString($url);
@@ -42,6 +53,14 @@ class ClientTest extends TestCase
         return $url;
     }
 
+    /**
+     * Tests user authorization
+     *
+     * @param string $url The authorization URL
+     * @return array The redirect URI parameters
+     * @throws NoSuchElementException If the username or password field is not found with the given selectors.
+     * @throws TimeoutException If the redirect URI page has not loaded in 5 seconds after submitting the form.
+     */
     #[Depends('testAuthorizationUrlGeneration')]
     public function testAuthorization(string $url): array
     {
@@ -81,6 +100,13 @@ class ClientTest extends TestCase
         return $params;
     }
 
+    /**
+     * Tests token request
+     *
+     * @param array $params The redirect URI parameters
+     * @return Client The client instance
+     * @throws ReflectionException If the method or property does not exist.
+     */
     #[Depends('testAuthorization')]
     public function testToken(array $params): Client {
         if ($this->client()->allow_implicit_flow) {
@@ -110,16 +136,25 @@ class ClientTest extends TestCase
         return $this->client();
     }
 
+    /**
+     * Tests user info request
+     *
+     * @param Client $client The client instance
+     */
     #[Depends('testToken')]
-    public function testUserInfo(Client $client): bool {
+    public function testUserInfo(Client $client): void {
         $user = $client->getUserInfo();
         $this->assertIsString($user->id_token);
         $this->assertIsString($user->sub);
 
         dump($user);
-        return true;
     }
 
+    /**
+     * Tests token introspection
+     *
+     * @param Client $client The client instance
+     */
     #[NoReturn] #[Depends('testToken')]
     public function testTokenIntrospection(Client $client): void {
         if ($client->allow_implicit_flow) {
@@ -138,6 +173,14 @@ class ClientTest extends TestCase
         $this->assertIsBool($result_refresh_token->get('active'));
         $this->assertIsBool($result_id_token->get('active'));
     }
+
+    /**
+     * Tests OIDC implicit flow
+     *
+     * @param array $params The redirect URI parameters
+     * @return Client The client instance
+     * @throws ReflectionException If the method or property does not exist.
+     */
     #[Depends('testAuthorization')]
     public function testImplicitFlow(array $params): Client {
         if (!$this->client()->allow_implicit_flow) {
@@ -177,16 +220,25 @@ class ClientTest extends TestCase
         return $this->client();
     }
 
+    /**
+     * Tests user info request with implicit flow
+     *
+     * @param Client $client The client instance
+     */
     #[Depends('testImplicitFlow')]
-    public function testUserInfoImplicitFlow(Client $client): bool {
+    public function testUserInfoImplicitFlow(Client $client): void {
         $user = $client->getUserInfo();
         $this->assertIsString($user->id_token);
         $this->assertIsString($user->sub);
 
         dump($user);
-        return true;
     }
 
+    /**
+     * Tests token introspection with implicit flow
+     *
+     * @param Client $client The client instance
+     */
     #[NoReturn] #[Depends('testImplicitFlow')]
     public function testTokenIntrospectionImplicitFlow(Client $client): void {
         $access_token = $this->getProperty($client, 'access_token');
@@ -200,6 +252,9 @@ class ClientTest extends TestCase
         $this->assertIsBool($result_id_token->get('active'));
     }
 
+    /**
+     * Tests dynamic registration
+     */
     public function testDynamicRegistration(): void {
         $this->client()->register();
         dump($this->client()->client_id, $this->client()->client_secret);

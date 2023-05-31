@@ -24,6 +24,7 @@ use Maicol07\OpenIDConnect\OIDCClientException;
 trait ImplicitFlow
 {
     /**
+     * Requests Access token with implicit flow
      * @throws JsonException
      */
     private function implicitFlow(Request $request, string $id_token): bool

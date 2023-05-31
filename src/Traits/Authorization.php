@@ -26,13 +26,16 @@ use Maicol07\OpenIDConnect\CodeChallengeMethod;
 use Maicol07\OpenIDConnect\ResponseType;
 use Maicol07\OpenIDConnect\Scope;
 
+/**
+ * This trait handles the authorization process.
+ */
 trait Authorization
 {
     /**
-     * Start Here
+     * Requests authorization from the OP. This will redirect the user to the OP's authorization endpoint.
      *
-     * @throws OIDCClientException
-     * @throws Exception
+     * @throws OIDCClientException If the authorization endpoint is not set
+     * @throws Exception If code_verifier cannot be generated due to random_bytes() failure
      */
     #[NoReturn]
     private function requestAuthorization(): void
@@ -44,8 +47,9 @@ trait Authorization
     }
 
     /**
-     * Get the authorization URL
-     * @throws Exception
+     * Generates the authorization URL to redirect the user to.
+     * @throws OIDCClientException If the authorization endpoint is not set
+     * @throws Exception If code_verifier cannot be generated due to random_bytes() failure
      */
     public function getAuthorizationUrl(?array $query_params = null, ?string $state = null): string
     {

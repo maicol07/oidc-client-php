@@ -16,15 +16,22 @@ This package is a complete refactor of [JuliusPC/OpenID-Connect-PHP](https://git
 - [RFC 7662: OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 - [Draft: OAuth 2.0 Authorization Server Issuer Identifier in Authorization Response](https://tools.ietf.org/html/draft-ietf-oauth-iss-auth-resp-00)
 
+## Providers compatibility
+| Provider | Is compatible? | Notes                                                         |
+|----------|----------------|---------------------------------------------------------------|
+| Keycloak | ✅              | Client authenticator must be set to "Client id and secret"    |
+| Casdoor  | ✅              | Code challenge must be set to S256 or PKCE should be disabled |
+
 ## Requirements
 1. PHP 8.1+
 2. JSON extension
 3. MBString extension
 4. (Optional) One between GMP or BCMath extension to allow faster cipher key operations
-(for JWT; see [here](https://web-token.spomky-labs.com/introduction/pre-requisite) for more information)
+   (for JWT; see [here](https://web-token.spomky-labs.com/introduction/pre-requisite) for more information)
 
 ## Install
 Install using composer:
+
 ```bash
 composer require maicol07/oidc-client-php
 ```
@@ -38,10 +45,12 @@ and versatile.
 ```php
 use Maicol07\OpenIDConnect\Client;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php',
+);
 $oidc->authenticate();
 $name = $oidc->getUserInfo()->given_name;
 ```
@@ -51,8 +60,11 @@ $name = $oidc->getUserInfo()->given_name;
 ```php
 use Maicol07\OpenIDConnect\Client;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    redirect_uri: 'https://example.com/callback.php',
+    client_name: 'My Client',
+);
 
 $oidc->register();
 [$client_id, $client_secret] = $oidc->getClientCredentials();
@@ -62,21 +74,23 @@ $oidc->register();
 
 ### Example 3: Network and Security
 You should always use HTTPS for your application. If you are using a self-signed certificate, you can disable the SSL
-verification by calling the `verifySsl` method on the client and, if you have it, set a custom certificate with `certPath` method
+verification by setting the `verify_ssl` property on the client and, if you have it, set a custom certificate in the `cert_path` property
 (this works only if verifySsl is set to false).
 
-You can also setup a proxy via the `httpProxy`.
+You can also setup a proxy via the `http_proxy`.
 
 ```php
 use Maicol07\OpenIDConnect\Client;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
-    ->httpProxy('http://proxy.example.com:8080')
-    ->certPath('path/to/cert.pem')
-    ->verifySsl(false)
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php',
+    http_proxy: 'http://proxy.example.com:8080',
+    cert_path: 'path/to/cert.pem',
+    verify_ssl: false
+);
 ```
 
 ### Example 4: Implicit flow
@@ -90,12 +104,14 @@ for alternatives.
 use Maicol07\OpenIDConnect\Client;
 use Maicol07\OpenIDConnect\ResponseType;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
-    ->responseType(ResponseType::ID_TOKEN)
-    ->allowImplicitFlow(true)
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php',
+    response_type: ResponseType::ID_TOKEN,
+    allow_implicit_flow: true,
+);
 $oidc->authenticate();
 $sub = $oidc->getUserInfo()->sub;
 ```
@@ -106,10 +122,12 @@ $sub = $oidc->getUserInfo()->sub;
 ```php
 use Maicol07\OpenIDConnect\Client;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php'
+);
 
 $data = $oidc->introspectToken('an.access-token.as.given');
 if (!$data->get('active')) {
@@ -126,13 +144,15 @@ in the discovery document, but supports it anyway.
 use Maicol07\OpenIDConnect\Client;
 use Maicol07\OpenIDConnect\CodeChallengeMethod;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php',
     // for some reason we want to set S256 explicitly as Code Challenge Method
     // maybe your OP doesn’t announce support for PKCE in its discovery document.
-    ->codeChallengeMethod(CodeChallengeMethod::S256)
+    code_challenge_method: CodeChallengeMethod::S256
+);
 
 $oidc->authenticate();
 $name = $oidc->getUserInfo()->given_name;
@@ -141,43 +161,47 @@ $name = $oidc->getUserInfo()->given_name;
 ### Example 7: Token endpoint authentication method
 By default, only `client_secret_basic` is enabled on client side which was the only supported for a long time.
 Recently `client_secret_jwt` and `private_key_jwt` have been added, but they remain disabled until explicitly enabled.
-    
+
 ```php
 use Maicol07\OpenIDConnect\Client;
 use Maicol07\OpenIDConnect\TokenEndpointAuthMethod;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
-    ->endpoints(options: [
-        'token_endpoint_auth_methods_supported' => [
-            TokenEndpointAuthMethod::CLIENT_SECRET_BASIC,
-            TokenEndpointAuthMethod::CLIENT_SECRET_JWT,
-            TokenEndpointAuthMethod::PRIVATE_KEY_JWT,
-        ],
-    ]);
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php',
+    token_endpoint_auth_methods_supported: [
+        TokenEndpointAuthMethod::CLIENT_SECRET_BASIC,
+        TokenEndpointAuthMethod::CLIENT_SECRET_JWT,
+        TokenEndpointAuthMethod::PRIVATE_KEY_JWT,
+    ]
+);
 ```
+
 **Note: A JWT generator is not included in this library yet.**
 
 ## Development Environments
+
 Sometimes you may need to disable SSL security on your development systems. You can do it by calling the `verify` method
 with the `false` parameter. Note: This is not recommended on production systems.
 
 ```php
 use Maicol07\OpenIDConnect\Client;
 
-$oidc = (new Client())
-    ->providerUrl('https://id.example.com')
-    ->clientId('ClientIDHere')
-    ->clientSecret('ClientSecretHere')
-    ->verifySsl(false)
+$oidc new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    client_secret: 'ClientSecretHere',
+    redirect_uri: 'https://example.com/callback.php',
+    verify_ssl: false      
+);
 ```
 
 ### Todo
 - Dynamic registration does not support registration auth tokens and endpoints
 
-  [1]: https://openid.net/specs/openid-connect-basic-1_0-15.html#id_res
-
 ## Contributing
- - All pull requests, once merged, should be added to the CHANGELOG.md file.
+- Issues and pull requests are welcome.
+
+[1]: https://openid.net/specs/openid-connect-basic-1_0-15.html#id_res

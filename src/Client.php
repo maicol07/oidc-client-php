@@ -47,35 +47,35 @@ class Client
     private string $id_token;
 
     /**
-     * @param string $client_id
-     * @param string $client_secret
-     * @param string|null $provider_url
-     * @param string|null $issuer
-     * @param array<string|Scope> $scopes
-     * @param string|null $redirect_uri
-     * @param bool $enable_pkce
-     * @param bool $enable_nonce
+     * @param string|null $client_id Client ID of the application registered on the OpenID Connect Provider (can be null if you use dynamic registration)
+     * @param string|null $client_secret Client Secret of the application registered on the OpenID Connect Provider (can be null if you use dynamic registration)
+     * @param string|null $provider_url URL of the OpenID Connect Provider
+     * @param string|null $issuer Issuer of the OpenID Connect Provider (can be null if it matches the provider_url)
+     * @param array<string|Scope> $scopes Scopes to request. Can be or an array of Scope enum values. Defaults to Scope::OPENID.
+     * @param string|null $redirect_uri Redirect URI of the application registered on the OpenID Connect Provider (can be null if you use dynamic registration)
+     * @param bool $enable_pkce Enable PKCE mode. Defaults to true - @see https://tools.ietf.org/html/rfc7636
+     * @param bool $enable_nonce Enable nonce. Defaults to true - @see http://openid.net/specs/openid-connect-core-1_0.html#IDToken
      * @param CodeChallengeMethod $code_challenge_method Code challenge method for PKCE mode - @see https://tools.ietf.org/html/rfc7636
-     * @param int $leeway
-     * @param ResponseType[] $response_types
-     * @param JwtSigningAlgorithm[] $id_token_signing_alg_values_supported
-     * @param string|null $authorization_endpoint
-     * @param string|null $token_endpoint
-     * @param string|null $userinfo_endpoint
-     * @param string|null $end_session_endpoint
-     * @param string|null $registration_endpoint
-     * @param string|null $introspect_endpoint
-     * @param string|null $revocation_endpoint
-     * @param string|null $jwks_endpoint
-     * @param bool $authorization_response_iss_parameter_supported
-     * @param ClientAuthMethod[] $token_endpoint_auth_methods_supported
-     * @param string|null $http_proxy
-     * @param string|null $cert_path
-     * @param bool $verify_ssl
-     * @param int $timeout
-     * @param string $client_name
+     * @param int $leeway Leeway for JWT validation. Defaults to 300.
+     * @param ResponseType[] $response_types Response types to use in the authorization request. Defaults to ResponseType::CODE if nothing is set.
+     * @param JwtSigningAlgorithm[] $id_token_signing_alg_values_supported Supported JWT signing algorithms (can be empty if you use auto discovery)
+     * @param string|null $authorization_endpoint Authorization endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $token_endpoint Token endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $userinfo_endpoint Userinfo endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $end_session_endpoint End session endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $registration_endpoint Registration endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $introspect_endpoint Introspect token endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $revocation_endpoint Revocation endpoint of the provider (can be null if you use auto discovery)
+     * @param string|null $jwks_endpoint JWKS endpoint of the provider (can be null if you use auto discovery)
+     * @param bool $authorization_response_iss_parameter_supported Allow iss parameter in authorization response. Defaults to false - @see http://openid.net/specs/openid-connect-core-1_0.html#AuthResponseValidation
+     * @param ClientAuthMethod[] $token_endpoint_auth_methods_supported Supported client authentication methods for token endpoint (can be empty if you use auto discovery)
+     * @param string|null $http_proxy HTTP proxy to use for requests (can be null if you don't want to use a proxy)
+     * @param string|null $cert_path Path to a custom certificate to use for requests (can be null if you don't want to use a custom certificate)
+     * @param bool $verify_ssl Verify SSL certificates when making requests. Defaults to true.
+     * @param int $timeout Timeout for requests. Defaults to 0.
+     * @param string $client_name Name of the client for dynamic registration (can be null if you have already registered the client)
      * @param bool $allow_implicit_flow Allow OAuth 2 implicit flow. - @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
-     * @param JWKSet|null $jwks
+     * @param JWKSet|null $jwks JWKSet to use for JWT validation (can be null if you use auto discovery)
      */
     public function __construct(
         public ?string $client_id = null,
@@ -113,6 +113,12 @@ class Client
         $this->autoDiscovery($this->provider_url);
     }
 
+    /**
+     * Custom setter for provider_url
+     *
+     * @param string $name Property name
+     * @param mixed $value Property value
+     */
     public function __set(string $name, mixed $value): void
     {
         $old_value = $this->{$name};
@@ -153,6 +159,12 @@ class Client
         $this->requestAuthorization();
     }
 
+    /**
+     * Validate the callback request
+     *
+     * @param Request $request The request object
+     * @throws OIDCClientException If the request is invalid
+     */
     private function validateCallback(Request $request): void
     {
         // protect against mix-up attacks
@@ -256,6 +268,11 @@ class Client
         return new UserInfo($response->collect()->put('id_token', $this->id_token));
     }
 
+    /**
+     * Redirects the user to the given URL
+     *
+     * @param string $url The URL to redirect to
+     */
     #[NoReturn]
     public function redirect(string $url): void
     {
@@ -263,12 +280,19 @@ class Client
         exit;
     }
 
+    /**
+     * Get client credentials as an array
+     */
     public function getClientCredentials(): array
     {
         return [$this->client_id, $this->client_secret];
     }
 
-    /** @noinspection PhpIncompatibleReturnTypeInspection - False positive */
+    /**
+     * Creates a new instance of the HTTP client
+     *
+     * @noinspection PhpIncompatibleReturnTypeInspection - False positive
+     */
     private function client(): PendingRequest
     {
         return (new Factory())
@@ -280,6 +304,8 @@ class Client
     }
 
     /**
+     * Get the scope string from the scopes array
+     *
      * @param array<string|Scope> $additional_scopes
      * @return string
      */

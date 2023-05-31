@@ -39,8 +39,10 @@ use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
 trait JWT
 {
     /**
-     * @throws JsonException
-     * @throws Exception
+     * Loads and validates a JWT
+     *
+     * @throws JsonException If the JWT payload is not valid JSON
+     * @throws Exception If the JWT is not valid
      */
     private function loadAndValidateJWT(string $jwt): JWS
     {
@@ -61,6 +63,9 @@ trait JWT
         return $jws;
     }
 
+    /**
+     * Creates a JWS Loader
+     */
     private function jwsLoader(): JWSLoader
     {
         $algorithmManager = new AlgorithmManager(array_map(static fn (JwtSigningAlgorithm $algorithm) => $algorithm->getAlgorithmObject(), $this->id_token_signing_alg_values_supported));
@@ -88,6 +93,9 @@ trait JWT
         );
     }
 
+    /**
+     * Gets the JWKs from the JWKS endpoint (if set) or from the JWKs property (if set)
+     */
     private function getJWKs(): JWKSet
     {
         if ($this->jwks_endpoint && empty($this->jwks)) {

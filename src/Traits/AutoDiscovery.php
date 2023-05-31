@@ -24,9 +24,16 @@ use Maicol07\OpenIDConnect\ResponseType;
 
 trait AutoDiscovery
 {
+    /** Path of the discovery document */
     private string $DISCOVERY_PATH = '.well-known/openid-configuration';
 
-    public function autoDiscovery(string $provider_url, array|string|null $query_params = null): self
+    /**
+     * Auto discovery of the OpenID Connect provider
+     *
+     * @param string $provider_url The URL of the provider
+     * @param array|string|null $query_params (optional) Query parameters to send with the request
+     */
+    public function autoDiscovery(string $provider_url, array|string|null $query_params = null): void
     {
         if ($provider_url) {
             $response = $this->client()
@@ -75,14 +82,19 @@ trait AutoDiscovery
                 $this->introspect_endpoint ??= $config->get('introspection_endpoint');
             }
         }
-
-        return $this;
     }
 
+    /**
+     * Trim the discovery path from the provider url
+     *
+     * @param string $provider_url The provider url
+     * @return string The provider url without the discovery path
+     */
     private function trimDiscoveryPath(string $provider_url): string
     {
-        return Str::endsWith($provider_url, $this->DISCOVERY_PATH)
-            ? Str::replace($provider_url, $this->DISCOVERY_PATH, '')
-            : $provider_url;
+        if (Str::endsWith($provider_url, $this->DISCOVERY_PATH)) {
+            return Str::replace($provider_url, $this->DISCOVERY_PATH, '');
+        }
+        return $provider_url;
     }
 }
