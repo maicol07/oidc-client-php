@@ -72,6 +72,8 @@ trait AutoDiscovery
                         $this->code_challenge_method = CodeChallengeMethod::S256;
                     }
                 }
+
+                $this->introspect_endpoint ??= $config->get('introspection_endpoint');
             }
         }
 
