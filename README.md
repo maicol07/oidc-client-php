@@ -3,8 +3,6 @@ A simple library that allows an application to authenticate a user through the b
 hopes to encourage OpenID Connect use by making it simple enough for a developer with little knowledge of the OpenID
 Connect protocol to setup authentication.
 
-This package is a complete refactor of [JuliusPC/OpenID-Connect-PHP](https://github.com/JuliusPC/OpenID-Connect-PHP).
-
 ## Supported Specifications
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html) ([finding the issuer is missing](https://github.com/jumbojett/OpenID-Connect-PHP/issues/2))
@@ -16,11 +14,14 @@ This package is a complete refactor of [JuliusPC/OpenID-Connect-PHP](https://git
 - [RFC 7662: OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
 - [Draft: OAuth 2.0 Authorization Server Issuer Identifier in Authorization Response](https://tools.ietf.org/html/draft-ietf-oauth-iss-auth-resp-00)
 
-## Providers compatibility
-| Provider | Is compatible? | Notes                                                         |
-|----------|----------------|---------------------------------------------------------------|
-| Keycloak | ✅              | Client authenticator must be set to "Client id and secret"    |
-| Casdoor  | ✅              | Code challenge must be set to S256 or PKCE should be disabled |
+## Tested providers
+> Note: This list is not exhaustive. Other generic OIDC providers should work as well.
+If you have tested this library with a provider not listed here, please open a PR to add it to the list and add a test configuration (.run directory).
+
+| Provider | Is tested? | Notes                                                         |
+|----------|------------|---------------------------------------------------------------|
+| Keycloak | ✅          | Client authenticator must be set to "Client id and secret"    |
+| Casdoor  | ✅          | Code challenge must be set to S256 or PKCE should be disabled |
 
 ## Requirements
 1. PHP 8.1+
