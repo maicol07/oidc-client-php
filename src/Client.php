@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 namespace Maicol07\OpenIDConnect;
 
 use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -33,6 +34,7 @@ use Maicol07\OpenIDConnect\Traits\DynamicRegistration;
 use Maicol07\OpenIDConnect\Traits\ImplicitFlow;
 use Maicol07\OpenIDConnect\Traits\JWT;
 use Maicol07\OpenIDConnect\Traits\Token;
+use SensitiveParameter;
 
 class Client
 {
@@ -76,10 +78,12 @@ class Client
      * @param string $client_name Name of the client for dynamic registration (can be null if you have already registered the client)
      * @param bool $allow_implicit_flow Allow OAuth 2 implicit flow. - @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
      * @param JWKSet|null $jwks JWKSet to use for JWT validation (can be null if you use auto discovery)
+     * @throws ConnectionException
+     * @noinspection SensitiveParameterInspection
      */
     public function __construct(
         public ?string $client_id = null,
-        public ?string $client_secret = null,
+        #[SensitiveParameter] public ?string $client_secret = null,
         public readonly ?string $provider_url = null,
         public ?string $issuer = null,
         public readonly array $scopes = [Scope::OPENID],
@@ -194,7 +198,7 @@ class Client
      *
      */
     #[NoReturn]
-    public function signOut(string $id_token, ?string $redirect = null): void
+    public function signOut(#[SensitiveParameter] string $id_token, ?string $redirect = null): void
     {
         $endpoint = $this->end_session_endpoint;
 
@@ -215,9 +219,11 @@ class Client
     /**
      * Request RFC8693 Token Exchange
      * https://datatracker.ietf.org/doc/html/rfc8693
+     * @throws ConnectionException
+     * @noinspection SensitiveParameterInspection
      */
     public function requestTokenExchange(
-        string $subjectToken,
+        #[SensitiveParameter] string $subjectToken,
         string $subjectTokenType,
         string $audience = ''
     ): Collection {
@@ -250,7 +256,7 @@ class Client
     /**
      * Returns the user info
      *
-     * @throws OIDCClientException
+     * @throws OIDCClientException|ConnectionException
      */
     public function getUserInfo(): UserInfo
     {
@@ -307,7 +313,6 @@ class Client
      * Get the scope string from the scopes array
      *
      * @param array<string|Scope> $additional_scopes
-     * @return string
      */
     private function getScopeString(array $additional_scopes = []): string
     {

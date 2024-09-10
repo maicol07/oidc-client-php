@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 namespace Maicol07\OpenIDConnect\Traits;
 
+use Illuminate\Http\Client\ConnectionException;
 use Maicol07\OpenIDConnect\OIDCClientException;
 
 trait DynamicRegistration
@@ -23,7 +24,7 @@ trait DynamicRegistration
     /**
      * Dynamic registration
      *
-     * @throws OIDCClientException
+     * @throws OIDCClientException|ConnectionException
      */
     public function register(?array $params = null): void
     {

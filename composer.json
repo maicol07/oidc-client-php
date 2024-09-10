@@ -14,28 +14,23 @@
   ],
   "license": "Apache-2.0",
   "require": {
-    "php": ">=8.1",
+    "php": ">=8.3",
     "ext-json": "*",
     "ext-mbstring": "*",
     "cse/helpers-session": "^1",
-    "guzzlehttp/guzzle": "^7",
+    "guzzlehttp/guzzle": ">=7",
     "illuminate/collections": ">=8",
     "illuminate/http": ">=8",
     "illuminate/support": ">=8",
-    "web-token/jwt-core": "^3",
-    "web-token/jwt-checker":  "^3",
-    "web-token/jwt-signature": "^3",
-    "web-token/jwt-signature-algorithm-hmac": "^3",
-    "web-token/jwt-signature-algorithm-rsa": "^3",
-    "web-token/jwt-signature-algorithm-ecdsa": "^3",
-    "web-token/jwt-signature-algorithm-eddsa": "^3"
+    "web-token/jwt-library": "^4.0.1"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",
     "friendsofphp/php-cs-fixer": "^3",
-    "phpunit/phpunit": "^10",
-    "vlucas/phpdotenv": "^5",
-    "php-webdriver/webdriver": "^1"
+    "phpunit/phpunit": "^11",
+    "rector/rector": "^1",
+    "php-webdriver/webdriver": "^1",
+    "vlucas/phpdotenv": "^5"
   },
   "suggest": {
     "ext-gmp": "Faster cipher key operations. Please see https://web-token.spomky-labs.com/introduction/pre-requisite",

@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ use cse\helpers\Session;
 use Illuminate\Http\Request;
 use JsonException;
 use Maicol07\OpenIDConnect\OIDCClientException;
+use SensitiveParameter;
 
 trait ImplicitFlow
 {
@@ -27,7 +28,7 @@ trait ImplicitFlow
      * Requests Access token with implicit flow
      * @throws JsonException
      */
-    private function implicitFlow(Request $request, string $id_token): bool
+    private function implicitFlow(Request $request, #[SensitiveParameter] string $id_token): bool
     {
         $this->access_token = $request->get('access_token');
 
@@ -37,6 +38,7 @@ trait ImplicitFlow
         }
         Session::remove('oidc_state');
 
+        /** @noinspection UnusedFunctionResultInspection */
         $this->loadAndValidateJWT($id_token);
 
         // Save the id token

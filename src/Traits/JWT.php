@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ namespace Maicol07\OpenIDConnect\Traits;
 
 use cse\helpers\Session;
 use Exception;
+use Illuminate\Http\Client\ConnectionException;
 use Jose\Component\Checker;
 use Jose\Component\Checker\AlgorithmChecker;
 use Jose\Component\Checker\ClaimCheckerManager;
@@ -35,6 +36,7 @@ use Jose\Component\Signature\Serializer\JWSSerializerManager;
 use JsonException;
 use Maicol07\OpenIDConnect\Checker\NonceChecker;
 use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
+use SensitiveParameter;
 
 trait JWT
 {
@@ -44,7 +46,7 @@ trait JWT
      * @throws JsonException If the JWT payload is not valid JSON
      * @throws Exception If the JWT is not valid
      */
-    private function loadAndValidateJWT(string $jwt): JWS
+    private function loadAndValidateJWT(#[SensitiveParameter] string $jwt): JWS
     {
         $claimCheckerManager = new ClaimCheckerManager(
             [
@@ -57,6 +59,7 @@ trait JWT
         );
 
         $jws = $this->jwsLoader()->loadAndVerifyWithKeySet($jwt, $this->getJWKs(), $signature);
+        /** @noinspection UnusedFunctionResultInspection */
         $claimCheckerManager->check(json_decode($jws->getPayload(), true, 512, JSON_THROW_ON_ERROR));
         Session::remove('oidc_nonce');
 
@@ -68,7 +71,7 @@ trait JWT
      */
     private function jwsLoader(): JWSLoader
     {
-        $algorithmManager = new AlgorithmManager(array_map(static fn (JwtSigningAlgorithm $algorithm) => $algorithm->getAlgorithmObject(), $this->id_token_signing_alg_values_supported));
+        $algorithmManager = new AlgorithmManager(array_map(static fn (JwtSigningAlgorithm $algorithm): \Jose\Component\Core\Algorithm => $algorithm->getAlgorithmObject(), $this->id_token_signing_alg_values_supported));
         $checkers = [
             new AlgorithmChecker(array_map(static fn (JwtSigningAlgorithm $algorithm) => $algorithm->name, $this->id_token_signing_alg_values_supported))
         ];
@@ -95,6 +98,7 @@ trait JWT
 
     /**
      * Gets the JWKs from the JWKS endpoint (if set) or from the JWKs property (if set)
+     * @throws ConnectionException
      */
     private function getJWKs(): JWKSet
     {

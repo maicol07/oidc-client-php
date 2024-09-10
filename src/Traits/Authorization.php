@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ trait Authorization
 
         $response_types = collect(in_array(ResponseType::CODE, $this->response_types, true) ? $this->response_types : [ResponseType::CODE]);
         if (!$this->allow_implicit_flow) {
-            $response_types = $response_types->reject(static fn (ResponseType $type) => $type === ResponseType::ID_TOKEN || $type === ResponseType::TOKEN);
+            $response_types = $response_types->reject(static fn (ResponseType $type): bool => $type === ResponseType::ID_TOKEN || $type === ResponseType::TOKEN);
         }
 
         $params = collect([
@@ -102,8 +102,6 @@ trait Authorization
             $params->put('code_challenge', $code_challenge)
                 ->put('code_challenge_method', $this->code_challenge_method->value);
         }
-
-        $auth_endpoint .= (!str_contains($auth_endpoint, '?') ? '?' : '&') . 'redirect_uri=' . $this->redirect_uri . '&' . Arr::query($params->all());
-        return $auth_endpoint;
+        return $auth_endpoint . ((!str_contains($auth_endpoint, '?') ? '?' : '&') . 'redirect_uri=' . $this->redirect_uri . '&' . Arr::query($params->all()));
     }
 }

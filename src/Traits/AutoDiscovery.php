@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 namespace Maicol07\OpenIDConnect\Traits;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Str;
 use Maicol07\OpenIDConnect\ClientAuthMethod;
 use Maicol07\OpenIDConnect\CodeChallengeMethod;
@@ -32,6 +33,7 @@ trait AutoDiscovery
      *
      * @param string $provider_url The URL of the provider
      * @param array|string|null $query_params (optional) Query parameters to send with the request
+     * @throws ConnectionException
      */
     public function autoDiscovery(string $provider_url, array|string|null $query_params = null): void
     {
@@ -47,10 +49,10 @@ trait AutoDiscovery
                 $response_types_supported = $config->get('response_types_supported');
                 if ($response_types_supported) {
                     $response_types = collect($response_types_supported)
-                        ->map(static fn (string $response_type) => explode(' ', $response_type))
-                        ->map(static fn (array $types) => array_map(static fn (string $type) => ResponseType::from($type), $types))
-                        ->reject(static fn (array $response_type) => $response_type === [ResponseType::NONE])
-                        ->reduce(static fn (array $carry, array $types) => count($types) > count($carry) ? $types : $carry, []);
+                        ->map(static fn (string $response_type): array => explode(' ', $response_type))
+                        ->map(static fn (array $types): array => array_map(static fn (string $type): ResponseType => ResponseType::from($type), $types))
+                        ->reject(static fn (array $response_type): bool => $response_type === [ResponseType::NONE])
+                        ->reduce(static fn (array $carry, array $types): array => count($types) > count($carry) ? $types : $carry, []);
                 }
                 $this->response_types = empty($this->response_types) ? $response_types : $this->response_types;
                 $this->issuer ??= $config->get('issuer');
@@ -62,14 +64,14 @@ trait AutoDiscovery
                 $this->jwks_endpoint ??= $config->get('jwks_uri');
 
                 $this->token_endpoint_auth_methods_supported = empty($this->token_endpoint_auth_methods_supported) ? array_filter(array_map(
-                    static fn (string $method) => ClientAuthMethod::tryFrom($method),
+                    static fn (string $method): ?ClientAuthMethod => ClientAuthMethod::tryFrom($method),
                     $config->get('token_endpoint_auth_methods_supported', [])
                 )) : $this->token_endpoint_auth_methods_supported;
 
                 $algorithms = $config->get('id_token_signing_alg_values_supported', []);
                 $this->id_token_signing_alg_values_supported =
                     empty($this->id_token_signing_alg_values_supported)
-                        ? array_filter(array_map(static fn (string $alg) => JwtSigningAlgorithm::tryFromName($alg), $algorithms))
+                        ? array_filter(array_map(static fn (string $alg): ?JwtSigningAlgorithm => JwtSigningAlgorithm::tryFromName($alg), $algorithms))
                         : $this->id_token_signing_alg_values_supported;
 
                 if ($this->code_challenge_method === CodeChallengeMethod::PLAIN) {

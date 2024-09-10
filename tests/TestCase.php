@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2023 Maicol07 (https://maicol07.it)
+ * Copyright © 2024 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,27 +18,10 @@
 
 namespace Maicol07\OpenIDConnect\Tests;
 
-/*
- * Copyright 2022 Maicol07 (https://maicol07.it)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 use Facebook\WebDriver\Remote\DesiredCapabilities;
 use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Maicol07\OpenIDConnect\Client;
 use Maicol07\OpenIDConnect\CodeChallengeMethod;
-use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
 use Maicol07\OpenIDConnect\Scope;
 use ReflectionClass;
 use ReflectionException;
@@ -116,8 +99,7 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      */
     public function invokeMethod(string|object $object, string $methodName, array $parameters = []): mixed
     {
-        $reflection = new ReflectionClass(get_class($object));
-        $method = $reflection->getMethod($methodName);
+        $method = (new ReflectionClass(get_class($object)))->getMethod($methodName);
         /** @noinspection PhpExpressionResultUnusedInspection */
         $method->setAccessible(true);
 
@@ -134,7 +116,6 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
      */
     public function getProperty(object $object, string $propertyName): mixed
     {
-        $reflection = new ReflectionClass(get_class($object));
-        return $reflection->getProperty($propertyName)->getValue($object);
+        return (new ReflectionClass(get_class($object)))->getProperty($propertyName)->getValue($object);
     }
 }
