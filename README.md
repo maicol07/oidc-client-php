@@ -34,7 +34,7 @@ If you have tested this library with a provider not listed here, please open a P
 Install using composer:
 
 ```bash
-composer require maicol07/oidc-client-php
+composer require maicol07/oidc-client
 ```
 
 ## Examples
