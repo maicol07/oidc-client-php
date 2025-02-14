@@ -203,18 +203,19 @@ $oidc new Client(
 To run the tests, you need to have a running OpenID Connect provider
 ### Keycloak
 1. Run a Keycloak docker container
-```bash
-docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:25.0.5 start-dev
-```
-2. Create a realm named `test`
-3. Create a client named `test-client` with `confidential` access type
-4. Set the `Valid Redirect URIs` to `http://localhost:8080/callback`
-5. Set the `Web Origins` to `http://localhost:8080`
-6. Set the `Access Type` to `Bearer-only`
-7. Set the `Client Authenticator` to `Client id and secret`
-8. Set the `Client ID` to `test-client`
-9. Set the `Client Secret` to `test-client-secret`
-10. Set the `Root URL` to `http://localhost:8080`
+   ```bash
+   docker run -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:25.0.5 start-dev
+   ```
+2. Create a client named with the following settings:
+   - Client ID: `oidc`
+   - Client authentication: ON
+   - Authorization: ON
+   - Authentication Flow: Standard Flow, Implicit Flow (if you want to test implicit flow), Direct Access Grants
+   - Client Secret: `oidc`
+   - Valid Redirect URIs: `http://localhost:9999/callback`
+   - Web Origins: `*`
+3. Go to Credentials tab and copy the Secret
+4. Tweak the PHPStorm Run configuration with your settings.
 
 
 ### Todo
