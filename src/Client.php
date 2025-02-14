@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2024 Maicol07 (https://maicol07.it)
+ * Copyright © 2025 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,7 @@ class Client
         public ?string $introspect_endpoint = null,
         public ?string $revocation_endpoint = null,
         public ?string $jwks_endpoint = null,
+        public ?string $jwt_audience = null,
         public bool $authorization_response_iss_parameter_supported = false,
         public array $token_endpoint_auth_methods_supported = [],
         public readonly ?string $http_proxy = null,

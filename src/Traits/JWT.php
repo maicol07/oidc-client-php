@@ -55,7 +55,7 @@ trait JWT
                 new Checker\IssuedAtChecker($clock, $this->time_drift),
                 new Checker\NotBeforeChecker($clock, $this->time_drift),
                 new Checker\ExpirationTimeChecker($clock, $this->time_drift),
-                new Checker\AudienceChecker($this->client_id),
+                new Checker\AudienceChecker($this->jwt_audience ?? $this->client_id),
                 new Checker\IssuerChecker([$this->issuer])
             ]
         );
