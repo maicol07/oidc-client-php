@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2024 Maicol07 (https://maicol07.it)
+ * Copyright © 2025 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,11 @@ trait AutoDiscovery
     /**
      * Auto discovery of the OpenID Connect provider
      *
-     * @param string $provider_url The URL of the provider
+     * @param string|null $provider_url The URL of the provider
      * @param array|string|null $query_params (optional) Query parameters to send with the request
      * @throws ConnectionException
      */
-    public function autoDiscovery(string $provider_url, array|string|null $query_params = null): void
+    public function autoDiscovery(?string $provider_url, array|string|null $query_params = null): void
     {
         if ($provider_url) {
             $response = $this->client()
