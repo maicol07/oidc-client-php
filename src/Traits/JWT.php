@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2024 Maicol07 (https://maicol07.it)
+ * Copyright © 2025 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ use JsonException;
 use Maicol07\OpenIDConnect\Checker\NonceChecker;
 use Maicol07\OpenIDConnect\JwtSigningAlgorithm;
 use SensitiveParameter;
+use Symfony\Component\Clock\Clock;
 
 trait JWT
 {
@@ -48,11 +49,12 @@ trait JWT
      */
     private function loadAndValidateJWT(#[SensitiveParameter] string $jwt): JWS
     {
+        $clock = new Clock();
         $claimCheckerManager = new ClaimCheckerManager(
             [
-                new Checker\IssuedAtChecker($this->time_drift),
-                new Checker\NotBeforeChecker($this->time_drift),
-                new Checker\ExpirationTimeChecker($this->time_drift),
+                new Checker\IssuedAtChecker($clock, $this->time_drift),
+                new Checker\NotBeforeChecker($clock, $this->time_drift),
+                new Checker\ExpirationTimeChecker($clock, $this->time_drift),
                 new Checker\AudienceChecker($this->client_id),
                 new Checker\IssuerChecker([$this->issuer])
             ]
