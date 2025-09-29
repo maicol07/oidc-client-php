@@ -55,10 +55,10 @@ trait Authorization
      */
     public function getAuthorizationUrl(?array $query_params = null, ?string $state = null): string
     {
-        // Extract query parameters from the userinfo endpoint
-        $parts = parse_url($this->userinfo_endpoint);
+        // Extract query parameters from the authorization endpoint
+        $parts = parse_url($this->authorization_endpoint);
         if ($parts === false) {
-            throw new OIDCClientException('The userinfo endpoint URL is invalid');
+            throw new OIDCClientException('The authorization endpoint URL is invalid');
         }
 
         $authorization_endpoint = $parts['scheme'].'://'.$parts['host'].($parts['path'] ?? '');
@@ -117,6 +117,6 @@ trait Authorization
         // Build query parameters
         $params->put('redirect_uri', $this->redirect_uri);
 
-        return $authorization_endpoint.Arr::query($params->all());
+        return $authorization_endpoint.'?'.Arr::query($params->all());
     }
 }
