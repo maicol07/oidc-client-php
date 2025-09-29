@@ -26,7 +26,7 @@
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest",
-    "friendsofphp/php-cs-fixer": "^3",
+    "laravel/pint": "^1",
     "phpunit/phpunit": "^11",
     "rector/rector": "^1",
     "php-webdriver/webdriver": "^1",
