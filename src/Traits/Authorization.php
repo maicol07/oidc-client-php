@@ -1,6 +1,7 @@
 <?php
+
 /*
- * Copyright © 2024 Maicol07 (https://maicol07.it)
+ * Copyright © 2025 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +22,8 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use JetBrains\PhpStorm\NoReturn;
-use Maicol07\OpenIDConnect\OIDCClientException;
 use Maicol07\OpenIDConnect\CodeChallengeMethod;
+use Maicol07\OpenIDConnect\OIDCClientException;
 use Maicol07\OpenIDConnect\ResponseType;
 use Maicol07\OpenIDConnect\Scope;
 
@@ -48,14 +49,23 @@ trait Authorization
 
     /**
      * Generates the authorization URL to redirect the user to.
+     *
      * @throws OIDCClientException If the authorization endpoint is not set
      * @throws Exception If code_verifier cannot be generated due to random_bytes() failure
      */
     public function getAuthorizationUrl(?array $query_params = null, ?string $state = null): string
     {
-        $auth_endpoint = $this->authorization_endpoint;
-        if (empty($auth_endpoint)) {
-            throw new OIDCClientException('Authorization endpoint not set');
+        // Extract query parameters from the userinfo endpoint
+        $parts = parse_url($this->userinfo_endpoint);
+        if ($parts === false) {
+            throw new OIDCClientException('The userinfo endpoint URL is invalid');
+        }
+
+        $authorization_endpoint = $parts['scheme'].'://'.$parts['host'].($parts['path'] ?? '');
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $query);
+        } else {
+            $query = [];
         }
 
         // State essentially acts as a session key for OIDC
@@ -63,11 +73,12 @@ trait Authorization
         Session::set('oidc_state', $state);
 
         $response_types = collect(in_array(ResponseType::CODE, $this->response_types, true) ? $this->response_types : [ResponseType::CODE]);
-        if (!$this->allow_implicit_flow) {
+        if (! $this->allow_implicit_flow) {
             $response_types = $response_types->reject(static fn (ResponseType $type): bool => $type === ResponseType::ID_TOKEN || $type === ResponseType::TOKEN);
         }
 
         $params = collect([
+            ...$query,
             'response_type' => $response_types->map(static fn (ResponseType $type) => $type->value)->implode(' '),
             'client_id' => $this->client_id,
             'state' => $state,
@@ -84,7 +95,7 @@ trait Authorization
         // PKCE will only used in pure authorization code flow and hybrid flow
         if (
             $this->enable_pkce
-            && !empty($this->code_challenge_method)
+            && ! empty($this->code_challenge_method)
             && (
                 empty($this->response_types) || count(
                     array_diff(
@@ -102,6 +113,10 @@ trait Authorization
             $params->put('code_challenge', $code_challenge)
                 ->put('code_challenge_method', $this->code_challenge_method->value);
         }
-        return $auth_endpoint . ((!str_contains($auth_endpoint, '?') ? '?' : '&') . 'redirect_uri=' . $this->redirect_uri . '&' . Arr::query($params->all()));
+
+        // Build query parameters
+        $params->put('redirect_uri', $this->redirect_uri);
+
+        return $authorization_endpoint.Arr::query($params->all());
     }
 }
