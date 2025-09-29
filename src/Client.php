@@ -261,10 +261,25 @@ class Client
      */
     public function getUserInfo(): UserInfo
     {
+        // Extract query parameters from the userinfo endpoint
+        $parts = parse_url($this->userinfo_endpoint);
+        if ($parts === false) {
+            throw new OIDCClientException('The userinfo endpoint URL is invalid');
+        }
+
+        $userinfo_endpoint = $parts['scheme'] . '://' . $parts['host'] . ($parts['path'] ?? '');
+        if (isset($parts['query'])) {
+            parse_str($parts['query'], $query);
+        } else {
+            $query = [];
+        }
+
+        $query['schema'] ??= 'openid';
+
         $response = $this->client()
             ->withToken($this->access_token)
             ->acceptJson()
-            ->get($this->userinfo_endpoint, ['schema' => 'openid']);
+            ->get($userinfo_endpoint, $query);
 
         if (!$response->ok()) {
             throw new OIDCClientException(
