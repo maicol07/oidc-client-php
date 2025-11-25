@@ -114,8 +114,8 @@ class Client
         public ?JWKSet $jwks = null
     ) {
         $this->redirect_uri ??= Request::capture()->url();
-        $this->issuer ??= $this->provider_url;
         $this->autoDiscovery($this->provider_url);
+        $this->issuer ??= $this->provider_url;
     }
 
     /**
