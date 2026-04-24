@@ -27,10 +27,11 @@
   "require-dev": {
     "roave/security-advisories": "dev-latest",
     "laravel/pint": "^1",
-    "phpunit/phpunit": "^13",
     "rector/rector": "^2",
     "php-webdriver/webdriver": "^1",
-    "vlucas/phpdotenv": "^5"
+    "vlucas/phpdotenv": "^5",
+    "pestphp/pest": "^4.6",
+    "pestphp/pest-plugin-drift": "^4.1"
   },
   "suggest": {
     "ext-gmp": "Faster cipher key operations. Please see https://web-token.spomky-labs.com/introduction/pre-requisite",
@@ -49,6 +50,11 @@
   "autoload-dev": {
     "psr-4": {
       "Maicol07\\OpenIDConnect\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
     }
   }
 }
