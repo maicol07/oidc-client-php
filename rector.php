@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright © 2024 Maicol07 (https://maicol07.it)
+ * Copyright © 2026 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,17 @@
 
 use Rector\Config\RectorConfig;
 use Rector\Set\ValueObject\SetList;
+use Rector\ValueObject\PhpVersion;
 
-return static function (RectorConfig $rectorConfig) {
-    $rectorConfig->sets([
-        SetList::PHP_82,
-        SetList::PHP_83,
-        SetList::DEAD_CODE,
-        SetList::TYPE_DECLARATION
-    ]);
-    $rectorConfig->paths([
-        'src',
-        'tests',
-    ]);
-};
+return RectorConfig::configure()
+    ->withPaths(['src', 'tests'])
+    ->withPreparedSets(
+        deadCode: true,
+        typeDeclarations: true,
+        typeDeclarationDocblocks: true,
+        privatization: true,
+        instanceOf: true,
+        earlyReturn: true,
+        carbon: true
+    )
+    ->withPhpVersion(PhpVersion::PHP_85);
