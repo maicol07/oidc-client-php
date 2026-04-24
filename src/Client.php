@@ -1,6 +1,6 @@
 <?php
 /*
- * Copyright © 2025 Maicol07 (https://maicol07.it)
+ * Copyright © 2026 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -304,6 +304,7 @@ class Client
 
     /**
      * Get client credentials as an array
+     * @return array<int, string|null>
      */
     public function getClientCredentials(): array
     {
