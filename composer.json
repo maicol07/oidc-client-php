@@ -27,8 +27,8 @@
   "require-dev": {
     "roave/security-advisories": "dev-latest",
     "laravel/pint": "^1",
-    "phpunit/phpunit": "^11",
-    "rector/rector": "^1",
+    "phpunit/phpunit": "^13",
+    "rector/rector": "^2",
     "php-webdriver/webdriver": "^1",
     "vlucas/phpdotenv": "^5"
   },
