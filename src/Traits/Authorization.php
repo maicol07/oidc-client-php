@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright © 2025 Maicol07 (https://maicol07.it)
+ * Copyright © 2026 Maicol07 (https://maicol07.it)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,11 @@ trait Authorization
             throw new OIDCClientException('The authorization endpoint URL is invalid');
         }
 
-        $authorization_endpoint = $parts['scheme'].'://'.$parts['host'].($parts['path'] ?? '');
+        $authorization_endpoint = $parts['scheme'] . '://' .
+            (isset($parts['user']) ? $parts['user'] . (isset($parts['pass']) ? ':' . $parts['pass'] : '') . '@' : '') .
+            $parts['host'] .
+            (isset($parts['port']) ? ':' . $parts['port'] : '') .
+            ($parts['path'] ?? '');
         if (isset($parts['query'])) {
             parse_str($parts['query'], $query);
         } else {

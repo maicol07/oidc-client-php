@@ -267,7 +267,11 @@ class Client
             throw new OIDCClientException('The userinfo endpoint URL is invalid');
         }
 
-        $userinfo_endpoint = $parts['scheme'] . '://' . $parts['host'] . ($parts['path'] ?? '');
+        $userinfo_endpoint = $parts['scheme'] . '://' .
+            (isset($parts['user']) ? $parts['user'] . (isset($parts['pass']) ? ':' . $parts['pass'] : '') . '@' : '') .
+            $parts['host'] .
+            (isset($parts['port']) ? ':' . $parts['port'] : '') .
+            ($parts['path'] ?? '');
         if (isset($parts['query'])) {
             parse_str($parts['query'], $query);
         } else {
