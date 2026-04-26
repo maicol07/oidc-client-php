@@ -17,6 +17,7 @@
 namespace Maicol07\OpenIDConnect\Traits;
 
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Maicol07\OpenIDConnect\ClientAuthMethod;
 use Maicol07\OpenIDConnect\CodeChallengeMethod;
@@ -38,12 +39,18 @@ trait AutoDiscovery
     public function autoDiscovery(?string $provider_url, array|string|null $query_params = null): void
     {
         if ($provider_url) {
-            $response = $this->client()
-                ->get("$provider_url/$this->DISCOVERY_PATH", $query_params);
+            $cacheKey = 'oidc:discovery:' . md5(json_encode([$provider_url, $query_params]));
+            /** @noinspection LaravelFunctionsInspection */
+            $cacheTtl = env('OIDC_DISCOVERY_CACHE_TTL', 3600);
 
-            if ($response->ok()) {
-                $config = $response->collect();
+            $config = Cache::remember($cacheKey, $cacheTtl, function () use ($provider_url, $query_params) {
+                $response = $this->client()
+                    ->get("$provider_url/$this->DISCOVERY_PATH", $query_params);
 
+                return $response->ok() ? $response->collect() : null;
+            });
+
+            if ($config) {
                 // Response types
                 $response_types = [];
                 $response_types_supported = $config->get('response_types_supported');
