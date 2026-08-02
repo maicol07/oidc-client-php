@@ -246,3 +246,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/git,linux,macos,windows,composer,phpstorm,visualstudiocode,phpunit
+
+### Local test harness ###
+# RFC 8705 mutual-TLS Docker test stack — kept locally, not part of the package.
+docker/

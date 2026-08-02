@@ -299,26 +299,6 @@ To run the tests, you need to have a running OpenID Connect provider
 3. Go to Credentials tab and copy the Secret
 4. Tweak the PHPStorm Run configuration with your settings.
 
-### Mutual TLS (RFC 8705)
-The mutual-TLS support has a self-contained test stack that needs nothing but Docker. It generates a
-CA and client certificates, starts a Keycloak configured for mutual TLS and certificate-bound access
-tokens, and runs the tests against it:
-
-```bash
-./docker/run-tests.sh          # run the tests and tear the stack down
-./docker/run-tests.sh --keep   # leave Keycloak running on https://localhost:8443 (admin/admin)
-```
-
-Besides the happy paths, the suite covers the cases that make the spec worth implementing: a token
-request without a certificate is rejected, a certificate with the wrong subject DN is rejected, and a
-certificate-bound access token is refused by the userinfo endpoint when the certificate is not
-presented. Generated certificates stay out of git.
-
-Two notes on Keycloak as a test provider: it implements the PKI variant (`tls_client_auth`) and does
-not advertise `self_signed_tls_client_auth`, and its trust store must be a Java trust store built
-with `keytool` — a PKCS#12 file created by `openssl pkcs12 -export -nokeys` makes it abort the TLS
-handshake.
-
 ### Todo
 - Dynamic registration does not support registration auth tokens and endpoints
 
