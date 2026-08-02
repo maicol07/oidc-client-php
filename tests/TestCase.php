@@ -118,4 +118,17 @@ abstract class TestCase extends \PHPUnit\Framework\TestCase
     {
         return (new ReflectionClass(get_class($object)))->getProperty($propertyName)->getValue($object);
     }
+
+    /**
+     * Set a protected/private property of a class.
+     *
+     * @param object $object An instantiated object that we will set the property on.
+     * @param string $propertyName Property name to set
+     * @param mixed $value Value to set the property to
+     * @throws ReflectionException If the property doesn't exist.
+     */
+    public function setProperty(object $object, string $propertyName, mixed $value): void
+    {
+        (new ReflectionClass(get_class($object)))->getProperty($propertyName)->setValue($object, $value);
+    }
 }

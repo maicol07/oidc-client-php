@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+use Maicol07\OpenIDConnect\Client;
+use Maicol07\OpenIDConnect\ClientAuthMethod;
+use Maicol07\OpenIDConnect\MutualTlsCertificate;
 use Maicol07\OpenIDConnect\Tests\TestCase;
 
 /*
@@ -55,7 +58,69 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/**
+ * A self-signed certificate and its private key, generated once per test run and reused
+ * across tests. Keeps the mutual-TLS tests free of both fixture files and a live provider.
+ *
+ * @param string $name Identifies the certificate; different names get different key pairs
+ */
+function certificate(string $name = 'client'): MutualTlsCertificate
 {
-    // ..
+    static $certificates = [];
+
+    if (!isset($certificates[$name])) {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $csr = openssl_csr_new(['commonName' => $name], $key, ['digest_alg' => 'sha256']);
+        openssl_x509_export(openssl_csr_sign($csr, null, $key, 1, ['digest_alg' => 'sha256']), $certificate);
+        openssl_pkey_export($key, $private_key);
+
+        $directory = sys_get_temp_dir() . '/oidc-client-php-tests';
+        if (!is_dir($directory)) {
+            mkdir($directory, 0700, true);
+        }
+
+        file_put_contents("$directory/$name.crt", $certificate);
+        file_put_contents("$directory/$name.key", $private_key);
+
+        $certificates[$name] = new MutualTlsCertificate("$directory/$name.crt", "$directory/$name.key");
+    }
+
+    return $certificates[$name];
+}
+
+/**
+ * A client that talks to no provider: without a provider_url the constructor skips auto
+ * discovery, so only the configuration passed here decides how the client behaves.
+ *
+ * @param array<string, mixed> $parameters Constructor parameters to override
+ */
+function client(mixed ...$parameters): Client
+{
+    return new Client(...[
+        'client_id' => 'mtls-client',
+        'redirect_uri' => 'https://example.com/callback',
+        ...$parameters,
+    ]);
+}
+
+/** A client configured for PKI mutual-TLS client authentication (RFC 8705 section 2.1). */
+function mtlsClient(): Client
+{
+    return client(
+        token_endpoint_auth_method: ClientAuthMethod::TLS_CLIENT_AUTH,
+        mtls_certificate: certificate('client')
+    );
+}
+
+/**
+ * The Guzzle request options the client would send, including the TLS `verify` setting and
+ * any client certificate.
+ *
+ * @return array<string, mixed>
+ */
+function requestOptions(Client $client): array
+{
+    $request = (new ReflectionMethod($client, 'client'))->invoke($client);
+
+    return (new ReflectionProperty($request, 'options'))->getValue($request);
 }
