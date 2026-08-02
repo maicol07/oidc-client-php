@@ -12,6 +12,7 @@ Connect protocol to setup authentication.
 - [RFC 7009: OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
 - [RFC 7636: Proof Key for Code Exchange by OAuth Public Clients](https://tools.ietf.org/html/rfc7636)
 - [RFC 7662: OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+- [RFC 8705: OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens](https://tools.ietf.org/html/rfc8705)
 - [Draft: OAuth 2.0 Authorization Server Issuer Identifier in Authorization Response](https://tools.ietf.org/html/draft-ietf-oauth-iss-auth-resp-00)
 
 ## Tested providers
@@ -182,6 +183,66 @@ $oidc = new Client(
 
 **Note: A JWT generator is not included in this library yet.**
 
+### Example 8: Mutual-TLS client authentication (RFC 8705)
+Instead of a client secret, the client can authenticate with a certificate presented during the TLS
+handshake. Pass the certificate through `mtls_certificate` and pick one of the two mutual-TLS methods:
+`ClientAuthMethod::TLS_CLIENT_AUTH` (the certificate is issued by a CA the provider trusts) or
+`ClientAuthMethod::SELF_SIGNED_TLS_CLIENT_AUTH` (the provider holds the certificate itself).
+
+```php
+use Maicol07\OpenIDConnect\Client;
+use Maicol07\OpenIDConnect\ClientAuthMethod;
+use Maicol07\OpenIDConnect\MutualTlsCertificate;
+
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    // No client_secret: the certificate authenticates the client
+    redirect_uri: 'https://example.com/callback.php',
+    token_endpoint_auth_method: ClientAuthMethod::TLS_CLIENT_AUTH,
+    mtls_certificate: new MutualTlsCertificate(
+        certificate_path: '/path/to/client.crt',
+        private_key_path: '/path/to/client.key',
+        // passphrase: 'private key passphrase, if it is encrypted'
+    ),
+);
+$oidc->authenticate();
+```
+
+The certificate is presented on every request to the provider, and when the provider publishes
+[`mtls_endpoint_aliases`](https://tools.ietf.org/html/rfc8705#section-5) those endpoints are used
+automatically. If `token_endpoint_auth_method` is omitted, a mutual-TLS method announced by the
+provider is selected only when a certificate is configured, so existing secret-based clients are
+unaffected.
+
+### Example 9: Certificate-bound access tokens (RFC 8705 section 3)
+A certificate-bound access token can only be used by the client holding the private key, so a stolen
+token is useless on its own. Providers advertise this through
+`tls_client_certificate_bound_access_tokens` in their discovery document, which is picked up
+automatically; the token then carries a `cnf` claim with the `x5t#S256` thumbprint of the certificate.
+
+`verifyCertificateBinding()` checks that such a token is bound to the configured certificate. It
+returns `false` when the token is not bound at all and throws an `OIDCClientException` when it is
+bound to a different certificate:
+
+```php
+use Maicol07\OpenIDConnect\OIDCClientException;
+
+// Claims of an access token, or an introspection response
+$claims = $oidc->introspectToken($access_token);
+
+try {
+    if ($oidc->verifyCertificateBinding($claims)) {
+        // The token is bound to our certificate
+    }
+} catch (OIDCClientException $e) {
+    // The token is bound to a different certificate — do not use it
+}
+```
+
+Note that the authoritative check belongs to the resource server, which compares the thumbprint in
+the token against the certificate presented to it.
+
 ## Development Environments
 
 Sometimes you may need to disable SSL security on your development systems. You can do it by calling the `verify` method
@@ -217,6 +278,25 @@ To run the tests, you need to have a running OpenID Connect provider
 3. Go to Credentials tab and copy the Secret
 4. Tweak the PHPStorm Run configuration with your settings.
 
+### Mutual TLS (RFC 8705)
+The mutual-TLS support has a self-contained test stack that needs nothing but Docker. It generates a
+CA and client certificates, starts a Keycloak configured for mutual TLS and certificate-bound access
+tokens, and runs the tests against it:
+
+```bash
+./docker/run-tests.sh          # run the tests and tear the stack down
+./docker/run-tests.sh --keep   # leave Keycloak running on https://localhost:8443 (admin/admin)
+```
+
+Besides the happy paths, the suite covers the cases that make the spec worth implementing: a token
+request without a certificate is rejected, a certificate with the wrong subject DN is rejected, and a
+certificate-bound access token is refused by the userinfo endpoint when the certificate is not
+presented. Generated certificates stay out of git.
+
+Two notes on Keycloak as a test provider: it implements the PKI variant (`tls_client_auth`) and does
+not advertise `self_signed_tls_client_auth`, and its trust store must be a Java trust store built
+with `keytool` — a PKCS#12 file created by `openssl pkcs12 -export -nokeys` makes it abort the TLS
+handshake.
 
 ### Todo
 - Dynamic registration does not support registration auth tokens and endpoints

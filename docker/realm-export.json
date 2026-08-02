@@ -1,0 +1,78 @@
+{
+  "realm": "mtls",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "testuser@example.com",
+      "firstName": "Test",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["default-roles-mtls"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "mtls-client",
+      "name": "RFC 8705 PKI mutual-TLS client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "clientAuthenticatorType": "client-x509",
+      "attributes": {
+        "x509.subjectdn": "CN=oidc-client-php",
+        "x509.allow.regex.pattern.comparison": "false",
+        "tls.client.certificate.bound.access.tokens": "true"
+      }
+    },
+    {
+      "clientId": "mtls-client-self-signed",
+      "name": "RFC 8705 self-signed mutual-TLS client",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "clientAuthenticatorType": "client-x509",
+      "attributes": {
+        "x509.subjectdn": "CN=oidc-client-php-self-signed",
+        "x509.allow.regex.pattern.comparison": "false",
+        "tls.client.certificate.bound.access.tokens": "true"
+      }
+    },
+    {
+      "clientId": "secret-client",
+      "name": "Client secret baseline (no mutual TLS)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": false,
+      "secret": "secret-client-password",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+  ]
+}

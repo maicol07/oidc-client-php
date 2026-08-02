@@ -82,6 +82,15 @@ trait AutoDiscovery
                 }
 
                 $this->introspect_endpoint ??= $config->get('introspection_endpoint');
+
+                // Mutual-TLS endpoint aliases and certificate-bound access tokens (RFC 8705)
+                $aliases = $config->get('mtls_endpoint_aliases', []);
+                if (empty($this->mtls_endpoint_aliases) && is_array($aliases)) {
+                    $this->mtls_endpoint_aliases = array_filter($aliases, 'is_string');
+                }
+
+                $this->tls_client_certificate_bound_access_tokens = $this->tls_client_certificate_bound_access_tokens
+                    || $config->get('tls_client_certificate_bound_access_tokens', false) === true;
             }
         }
     }

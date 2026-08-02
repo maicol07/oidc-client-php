@@ -52,13 +52,16 @@ trait Token
 
         $client = $this->client();
 
-        // Consider Basic authentication if provider config is set this way
-        if (in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)) {
+        // With mutual TLS the certificate authenticates the client, so no secret is sent
+        if (!$this->applyMutualTlsClientAuth($data)
+            // Consider Basic authentication if provider config is set this way
+            && in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)
+        ) {
             $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
 
-        $response = $client->post($this->token_endpoint, $data)->collect();
+        $response = $client->post($this->mtlsEndpoint('token', $this->token_endpoint), $data)->collect();
 
         $this->access_token = $response->get('access_token');
         $this->refresh_token = $response->get('refresh_token');
@@ -87,10 +90,17 @@ trait Token
         $client_id ??= $this->client_id;
         $client_secret ??= $this->client_secret;
 
-        return $this->client()
-            ->withBasicAuth($client_id, $client_secret)
+        $client = $this->client();
+        // With mutual TLS the certificate authenticates the client, so no secret is sent
+        if ($this->usesMutualTlsClientAuth()) {
+            $data['client_id'] = $client_id;
+        } else {
+            $client = $client->withBasicAuth($client_id, $client_secret);
+        }
+
+        return $client
             ->asForm()
-            ->post($this->introspect_endpoint, $data)
+            ->post($this->mtlsEndpoint('introspection', $this->introspect_endpoint), $data)
             ->collect();
     }
 
@@ -115,10 +125,17 @@ trait Token
         $client_id ??= $this->client_id;
         $client_secret ??= $this->client_secret;
 
-        return $this->client()
-            ->withBasicAuth($client_id, $client_secret)
+        $client = $this->client();
+        // With mutual TLS the certificate authenticates the client, so no secret is sent
+        if ($this->usesMutualTlsClientAuth()) {
+            $data['client_id'] = $client_id;
+        } else {
+            $client = $client->withBasicAuth($client_id, $client_secret);
+        }
+
+        return $client
             ->acceptJson()
-            ->post($this->revocation_endpoint, $data)
+            ->post($this->mtlsEndpoint('revocation', $this->revocation_endpoint), $data)
             ->collect();
     }
 
@@ -174,9 +191,12 @@ trait Token
             'client_secret' => $this->client_secret
         ];
 
-        // Consider Basic authentication if provider config is set this way
         $client = $this->client();
-        if (in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)) {
+        // With mutual TLS the certificate authenticates the client, so no secret is sent
+        if (!$this->applyMutualTlsClientAuth($data)
+            // Consider Basic authentication if provider config is set this way
+            && in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)
+        ) {
             $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
@@ -186,6 +206,6 @@ trait Token
             $data['code_verifier'] = $code_verifier;
         }
 
-        return $client->asForm()->post($this->token_endpoint, $data)->collect();
+        return $client->asForm()->post($this->mtlsEndpoint('token', $this->token_endpoint), $data)->collect();
     }
 }

@@ -33,6 +33,7 @@ use Maicol07\OpenIDConnect\Traits\AutoDiscovery;
 use Maicol07\OpenIDConnect\Traits\DynamicRegistration;
 use Maicol07\OpenIDConnect\Traits\ImplicitFlow;
 use Maicol07\OpenIDConnect\Traits\JWT;
+use Maicol07\OpenIDConnect\Traits\MutualTls;
 use Maicol07\OpenIDConnect\Traits\Token;
 use SensitiveParameter;
 
@@ -44,6 +45,7 @@ class Client
     use DynamicRegistration;
     use ImplicitFlow;
     use JWT;
+    use MutualTls;
 
     private string $access_token;
     private string $id_token;
@@ -71,6 +73,9 @@ class Client
      * @param string|null $jwks_endpoint JWKS endpoint of the provider (can be null if you use auto discovery)
      * @param bool $authorization_response_iss_parameter_supported Allow iss parameter in authorization response. Defaults to false - @see http://openid.net/specs/openid-connect-core-1_0.html#AuthResponseValidation
      * @param ClientAuthMethod[] $token_endpoint_auth_methods_supported Supported client authentication methods for token endpoint (can be empty if you use auto discovery)
+     * @param ClientAuthMethod|null $token_endpoint_auth_method Client authentication method to use for the token endpoint. Defaults to null, which picks a method from the supported ones - @see https://tools.ietf.org/html/rfc8705
+     * @param MutualTlsCertificate|null $mtls_certificate Client certificate to present during the TLS handshake, for mutual-TLS client authentication and certificate-bound access tokens - @see https://tools.ietf.org/html/rfc8705
+     * @param bool $tls_client_certificate_bound_access_tokens Request certificate-bound access tokens (can be false if you use auto discovery) - @see https://tools.ietf.org/html/rfc8705#section-3
      * @param string|null $http_proxy HTTP proxy to use for requests (can be null if you don't want to use a proxy)
      * @param string|null $cert_path Path to a custom certificate to use for requests (can be null if you don't want to use a custom certificate)
      * @param bool $verify_ssl Verify SSL certificates when making requests. Defaults to true.
@@ -105,6 +110,9 @@ class Client
         public ?string $jwt_audience = null,
         public bool $authorization_response_iss_parameter_supported = false,
         public array $token_endpoint_auth_methods_supported = [],
+        public ?ClientAuthMethod $token_endpoint_auth_method = null,
+        public readonly ?MutualTlsCertificate $mtls_certificate = null,
+        public bool $tls_client_certificate_bound_access_tokens = false,
         public readonly ?string $http_proxy = null,
         public readonly ?string $cert_path = null,
         public readonly bool $verify_ssl = true,
@@ -245,13 +253,16 @@ class Client
             $data['audience'] = $audience;
         }
 
-        # Consider Basic authentication if provider config is set this way
-        if (in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)) {
+        # With mutual TLS the certificate authenticates the client, so no secret is sent
+        if (!$this->applyMutualTlsClientAuth($data)
+            # Consider Basic authentication if provider config is set this way
+            && in_array(ClientAuthMethod::CLIENT_SECRET_BASIC, $this->token_endpoint_auth_methods_supported, true)
+        ) {
             $client = $client->withBasicAuth($this->client_id, $this->client_secret);
             unset($data['client_secret'], $data['client_id']);
         }
 
-        return $client->post($this->token_endpoint, $data)->collect();
+        return $client->post($this->mtlsEndpoint('token', $this->token_endpoint), $data)->collect();
     }
 
     /**
@@ -262,7 +273,7 @@ class Client
     public function getUserInfo(): UserInfo
     {
         // Extract query parameters from the userinfo endpoint
-        $parts = parse_url($this->userinfo_endpoint);
+        $parts = parse_url($this->mtlsEndpoint('userinfo', $this->userinfo_endpoint));
         if ($parts === false) {
             throw new OIDCClientException('The userinfo endpoint URL is invalid');
         }
@@ -326,7 +337,10 @@ class Client
             ->withOptions([
                 'connect_timeout' => $this->timeout,
                 'proxy' => $this->http_proxy,
-                'verify' => ($this->verify_ssl ?: $this->cert_path) ?? false
+                'verify' => ($this->verify_ssl ?: $this->cert_path) ?? false,
+                // Present the client certificate during the TLS handshake, for mutual-TLS client
+                // authentication and certificate-bound access tokens (RFC 8705)
+                ...$this->mtls_certificate?->getRequestOptions() ?? []
             ]);
     }
 
