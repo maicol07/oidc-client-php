@@ -75,9 +75,9 @@ $oidc->register();
 ```
 
 ### Example 3: Network and Security
-You should always use HTTPS for your application. If you are using a self-signed certificate, you can disable the SSL
-verification by setting the `verify_ssl` property on the client and, if you have it, set a custom certificate in the `cert_path` property
-(this works only if verifySsl is set to false).
+You should always use HTTPS for your application. If your provider uses a private CA or a self-signed certificate, set
+`cert_path` to the CA bundle: the connection is then still fully verified, just against your own CA rather than the
+system trust store. A bundle set this way is always used, so you do not need to touch `verify_ssl`.
 
 You can also setup a proxy via the `http_proxy`.
 
@@ -90,10 +90,17 @@ $oidc = new Client(
     client_secret: 'ClientSecretHere',
     redirect_uri: 'https://example.com/callback.php',
     http_proxy: 'http://proxy.example.com:8080',
-    cert_path: 'path/to/cert.pem',
-    verify_ssl: false
+    cert_path: 'path/to/ca.pem'
 );
 ```
+
+Setting `verify_ssl: false` disables certificate verification entirely, which exposes tokens and the client secret to
+anyone on the network path. Prefer `cert_path`, and see [Development Environments](#development-environments) if you
+really need to turn verification off.
+
+> **Note:** in earlier versions `cert_path` only took effect when `verify_ssl` was `false`. It is now honoured in both
+> cases, so `cert_path: 'path/to/ca.pem', verify_ssl: false` keeps verifying against the bundle rather than silently
+> trusting any certificate.
 
 ### Example 4: Implicit flow
 > Reference: https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
@@ -215,6 +222,16 @@ automatically. If `token_endpoint_auth_method` is omitted, a mutual-TLS method a
 provider is selected only when a certificate is configured, so existing secret-based clients are
 unaffected.
 
+If the provider's certificate is issued by a private CA, point `cert_path` at the CA bundle so the
+connection is still verified:
+
+```php
+$oidc = new Client(
+    // ...
+    cert_path: '/path/to/ca.crt',
+);
+```
+
 ### Example 9: Certificate-bound access tokens (RFC 8705 section 3)
 A certificate-bound access token can only be used by the client holding the private key, so a stolen
 token is useless on its own. Providers advertise this through
@@ -245,8 +262,12 @@ the token against the certificate presented to it.
 
 ## Development Environments
 
-Sometimes you may need to disable SSL security on your development systems. You can do it by calling the `verify` method
-with the `false` parameter. Note: This is not recommended on production systems.
+Sometimes you may need to disable SSL security on your development systems. You can do it by setting `verify_ssl` to
+`false`. Note: This is not recommended on production systems.
+
+If you only need to trust a private CA or a self-signed provider certificate, use `cert_path` instead (see
+[Example 3](#example-3-network-and-security)): it keeps the connection verified. Note that `verify_ssl: false` only
+disables verification when no `cert_path` is set — a bundle given there is always honoured.
 
 ```php
 use Maicol07\OpenIDConnect\Client;

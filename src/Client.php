@@ -77,8 +77,8 @@ class Client
      * @param MutualTlsCertificate|null $mtls_certificate Client certificate to present during the TLS handshake, for mutual-TLS client authentication and certificate-bound access tokens - @see https://tools.ietf.org/html/rfc8705
      * @param bool $tls_client_certificate_bound_access_tokens Request certificate-bound access tokens (can be false if you use auto discovery) - @see https://tools.ietf.org/html/rfc8705#section-3
      * @param string|null $http_proxy HTTP proxy to use for requests (can be null if you don't want to use a proxy)
-     * @param string|null $cert_path Path to a custom certificate to use for requests (can be null if you don't want to use a custom certificate)
-     * @param bool $verify_ssl Verify SSL certificates when making requests. Defaults to true.
+     * @param string|null $cert_path Path to a CA bundle to verify the provider's certificate against, for providers using a private CA (can be null to use the system trust store). When set it is always used, even if $verify_ssl is false.
+     * @param bool $verify_ssl Verify SSL certificates when making requests. Defaults to true. Setting this to false disables verification entirely and is unsafe outside development; to trust a private CA use $cert_path instead.
      * @param int $timeout Timeout for requests. Defaults to 0.
      * @param string $client_name Name of the client for dynamic registration (can be null if you have already registered the client)
      * @param bool $allow_implicit_flow Allow OAuth 2 implicit flow. - @see http://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
@@ -337,7 +337,11 @@ class Client
             ->withOptions([
                 'connect_timeout' => $this->timeout,
                 'proxy' => $this->http_proxy,
-                'verify' => ($this->verify_ssl ?: $this->cert_path) ?? false,
+                // A custom CA bundle always wins: verifying against it is strictly safer than
+                // not verifying, and it stays honoured even alongside `verify_ssl: false`, which
+                // earlier versions required to make `cert_path` take effect at all. Verification
+                // is therefore only disabled when it is turned off *and* no bundle is given.
+                'verify' => $this->cert_path ?? $this->verify_ssl,
                 // Present the client certificate during the TLS handshake, for mutual-TLS client
                 // authentication and certificate-bound access tokens (RFC 8705)
                 ...$this->mtls_certificate?->getRequestOptions() ?? []

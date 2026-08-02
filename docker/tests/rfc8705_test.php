@@ -237,6 +237,57 @@ check('self-signed certificate is presented, authenticates and yields a bound to
         : false;
 });
 
+echo "\n-- TLS verification: cert_path must never silently stop verifying --\n";
+
+/** The Guzzle `verify` option the client would use for the given configuration. */
+$verifyOption = static function (?string $certPath, bool $verifySsl) use ($providerUrl): mixed {
+    $c = new Client(
+        client_id: 'secret-client',
+        client_secret: 'secret-client-password',
+        // No provider_url: auto discovery would need a working connection, and only the
+        // resulting request options matter here.
+        redirect_uri: 'https://example.com/callback',
+        cert_path: $certPath,
+        verify_ssl: $verifySsl,
+    );
+    $request = (new ReflectionMethod($c, 'client'))->invoke($c);
+    return (new ReflectionProperty($request, 'options'))->getValue($request)['verify'] ?? null;
+};
+
+check('cert_path is used when verify_ssl is true', function () use ($verifyOption, $caPath) {
+    return $verifyOption($caPath, true) === $caPath ? 'verifies against the bundle' : false;
+});
+
+check('cert_path is STILL used when verify_ssl is false (no silent downgrade)', function () use ($verifyOption, $caPath) {
+    // Earlier versions documented `verify_ssl: false` as the way to make cert_path take effect,
+    // so this combination must keep verifying rather than trusting any certificate.
+    return $verifyOption($caPath, false) === $caPath ? 'verifies against the bundle' : false;
+});
+
+check('verification stays on by default', function () use ($verifyOption) {
+    return $verifyOption(null, true) === true ? 'verify => true' : false;
+});
+
+check('verify_ssl false with no bundle still disables verification', function () use ($verifyOption) {
+    return $verifyOption(null, false) === false ? 'verify => false' : false;
+});
+
+check('no configuration verifies less than it did before this change', function () use ($verifyOption, $caPath): bool {
+    foreach ([[true, null], [true, $caPath], [false, null], [false, $caPath]] as [$verifySsl, $certPath]) {
+        // The behaviour of the original expression, before RFC 8705 support was added.
+        $before = ($verifySsl ?: $certPath) ?? false;
+        $now = $verifyOption($certPath, $verifySsl);
+        // Verification may be strengthened (false -> bundle/true) but never weakened.
+        if ($before !== false && $now === false) {
+            return false;
+        }
+        if (is_string($before) && $now !== $before) {
+            return false;
+        }
+    }
+    return true;
+});
+
 echo "\n-- Regressions: secret-based clients still work --\n";
 
 check('client_secret_basic client is unaffected by the RFC 8705 changes', function () use ($providerUrl, $caPath) {
