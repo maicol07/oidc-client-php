@@ -196,6 +196,47 @@ test('endpoints are unchanged when no certificate is configured', function () {
         ->toBe('https://example.com/token');
 });
 
+test('certificate bound access tokens alone route through the aliased endpoint', function () {
+    // A client may authenticate with a secret and still ask for certificate-bound tokens: the
+    // certificate has to be presented at the token endpoint, so the alias must be used.
+    $client = client(
+        client_secret: 'a-secret',
+        token_endpoint_auth_method: ClientAuthMethod::CLIENT_SECRET_BASIC,
+        mtls_certificate: certificate('client'),
+        tls_client_certificate_bound_access_tokens: true
+    );
+    $this->setProperty($client, 'mtls_endpoint_aliases', ['token_endpoint' => 'https://mtls.example.com/token']);
+
+    expect($this->invokeMethod($client, 'mtlsEndpoint', ['token', 'https://example.com/token']))
+        ->toBe('https://mtls.example.com/token')
+        // The certificate authenticates nothing here, it only binds the token.
+        ->and($client->usesMutualTlsClientAuth())->toBeFalse();
+});
+
+test('a certificate used for neither authentication nor binding does not divert endpoints', function () {
+    $client = client(
+        client_secret: 'a-secret',
+        token_endpoint_auth_method: ClientAuthMethod::CLIENT_SECRET_BASIC,
+        mtls_certificate: certificate('client')
+    );
+    $this->setProperty($client, 'mtls_endpoint_aliases', ['token_endpoint' => 'https://mtls.example.com/token']);
+
+    expect($this->invokeMethod($client, 'mtlsEndpoint', ['token', 'https://example.com/token']))
+        ->toBe('https://example.com/token');
+});
+
+test('dynamic registration resolves the aliased registration endpoint', function () {
+    // register() is where a mutual-TLS client announces itself, so it is the one call that most
+    // needs the certificate presented.
+    $client = mtlsClient();
+    $this->setProperty($client, 'mtls_endpoint_aliases', [
+        'registration_endpoint' => 'https://mtls.example.com/register',
+    ]);
+
+    expect($this->invokeMethod($client, 'mtlsEndpoint', ['registration', 'https://example.com/register']))
+        ->toBe('https://mtls.example.com/register');
+});
+
 test('a token bound to the configured certificate is accepted', function () {
     $client = mtlsClient();
 

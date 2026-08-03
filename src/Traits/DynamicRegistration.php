@@ -41,7 +41,9 @@ trait DynamicRegistration
             $data->put('tls_client_certificate_bound_access_tokens', true);
         }
 
-        $response = $this->client()->post($this->registration_endpoint, $data->all())->collect();
+        $response = $this->client()
+            ->post($this->mtlsEndpoint('registration', $this->registration_endpoint), $data->all())
+            ->collect();
 
         $error = $response->get('error_description');
         if ($error) {

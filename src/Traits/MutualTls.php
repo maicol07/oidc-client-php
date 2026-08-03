@@ -82,11 +82,26 @@ trait MutualTls
      */
     private function mtlsEndpoint(string $name, ?string $endpoint): ?string
     {
-        if ($this->mtls_certificate === null) {
+        if (!$this->usesMutualTls()) {
             return $endpoint;
         }
 
         return $this->mtls_endpoint_aliases["{$name}_endpoint"] ?? $endpoint;
+    }
+
+    /**
+     * Whether requests to the provider go through mutual TLS, either to authenticate the client
+     * or to obtain certificate-bound access tokens.
+     *
+     * Both cases require the aliased endpoints: they are served on a host/port that requests a
+     * client certificate during the handshake. Certificate-bound tokens are issued to the
+     * certificate presented at the token endpoint, so they need it even when the client
+     * authenticates with a secret - @see https://tools.ietf.org/html/rfc8705#section-3
+     */
+    private function usesMutualTls(): bool
+    {
+        return $this->usesMutualTlsClientAuth()
+            || ($this->mtls_certificate !== null && $this->tls_client_certificate_bound_access_tokens);
     }
 
     /**
