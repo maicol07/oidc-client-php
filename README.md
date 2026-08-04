@@ -12,6 +12,7 @@ Connect protocol to setup authentication.
 - [RFC 7009: OAuth 2.0 Token Revocation](https://tools.ietf.org/html/rfc7009)
 - [RFC 7636: Proof Key for Code Exchange by OAuth Public Clients](https://tools.ietf.org/html/rfc7636)
 - [RFC 7662: OAuth 2.0 Token Introspection](https://tools.ietf.org/html/rfc7662)
+- [RFC 8705: OAuth 2.0 Mutual-TLS Client Authentication and Certificate-Bound Access Tokens](https://tools.ietf.org/html/rfc8705)
 - [Draft: OAuth 2.0 Authorization Server Issuer Identifier in Authorization Response](https://tools.ietf.org/html/draft-ietf-oauth-iss-auth-resp-00)
 
 ## Tested providers
@@ -74,9 +75,9 @@ $oidc->register();
 ```
 
 ### Example 3: Network and Security
-You should always use HTTPS for your application. If you are using a self-signed certificate, you can disable the SSL
-verification by setting the `verify_ssl` property on the client and, if you have it, set a custom certificate in the `cert_path` property
-(this works only if verifySsl is set to false).
+You should always use HTTPS for your application. If your provider uses a private CA or a self-signed certificate, set
+`cert_path` to the CA bundle: the connection is then still fully verified, just against your own CA rather than the
+system trust store. A bundle set this way is always used, so you do not need to touch `verify_ssl`.
 
 You can also setup a proxy via the `http_proxy`.
 
@@ -89,10 +90,17 @@ $oidc = new Client(
     client_secret: 'ClientSecretHere',
     redirect_uri: 'https://example.com/callback.php',
     http_proxy: 'http://proxy.example.com:8080',
-    cert_path: 'path/to/cert.pem',
-    verify_ssl: false
+    cert_path: 'path/to/ca.pem'
 );
 ```
+
+Setting `verify_ssl: false` disables certificate verification entirely, which exposes tokens and the client secret to
+anyone on the network path. Prefer `cert_path`, and see [Development Environments](#development-environments) if you
+really need to turn verification off.
+
+> **Note:** in earlier versions `cert_path` only took effect when `verify_ssl` was `false`. It is now honoured in both
+> cases, so `cert_path: 'path/to/ca.pem', verify_ssl: false` keeps verifying against the bundle rather than silently
+> trusting any certificate.
 
 ### Example 4: Implicit flow
 > Reference: https://openid.net/specs/openid-connect-core-1_0.html#ImplicitFlowAuth
@@ -182,10 +190,100 @@ $oidc = new Client(
 
 **Note: A JWT generator is not included in this library yet.**
 
+### Example 8: Mutual-TLS client authentication (RFC 8705)
+Instead of a client secret, the client can authenticate with a certificate presented during the TLS
+handshake. Pass the certificate through `mtls_certificate` and pick one of the two mutual-TLS methods:
+`ClientAuthMethod::TLS_CLIENT_AUTH` (the certificate is issued by a CA the provider trusts) or
+`ClientAuthMethod::SELF_SIGNED_TLS_CLIENT_AUTH` (the provider holds the certificate itself).
+
+```php
+use Maicol07\OpenIDConnect\Client;
+use Maicol07\OpenIDConnect\ClientAuthMethod;
+use Maicol07\OpenIDConnect\MutualTlsCertificate;
+
+$oidc = new Client(
+    provider_url: 'https://id.example.com',
+    client_id: 'ClientIDHere',
+    // No client_secret: the certificate authenticates the client
+    redirect_uri: 'https://example.com/callback.php',
+    token_endpoint_auth_method: ClientAuthMethod::TLS_CLIENT_AUTH,
+    mtls_certificate: new MutualTlsCertificate(
+        certificate_path: '/path/to/client.crt',
+        private_key_path: '/path/to/client.key',
+        // passphrase: 'private key passphrase, if it is encrypted'
+    ),
+);
+$oidc->authenticate();
+```
+
+The certificate is presented on every request to the provider, and when the provider publishes
+[`mtls_endpoint_aliases`](https://tools.ietf.org/html/rfc8705#section-5) those endpoints are used
+automatically. If `token_endpoint_auth_method` is omitted, a mutual-TLS method announced by the
+provider is selected only when a certificate is configured, so existing secret-based clients are
+unaffected.
+
+If the provider's certificate is issued by a private CA, point `cert_path` at the CA bundle so the
+connection is still verified:
+
+```php
+$oidc = new Client(
+    // ...
+    cert_path: '/path/to/ca.crt',
+);
+```
+
+When registering a mutual-TLS client dynamically, `register()` sends `token_endpoint_auth_method`
+and `tls_client_certificate_bound_access_tokens` for you, but RFC 8705 asks for metadata that only
+you can supply. Pass it through the `register()` parameters, otherwise the provider will reject the
+registration with an opaque error:
+
+- `tls_client_auth` requires exactly one subject identifier, such as `tls_client_auth_subject_dn` or
+  `tls_client_auth_san_dns` ([section 2.1.2](https://tools.ietf.org/html/rfc8705#section-2.1.2))
+- `self_signed_tls_client_auth` requires `jwks` or `jwks_uri`
+  ([section 2.2.2](https://tools.ietf.org/html/rfc8705#section-2.2.2))
+
+```php
+$oidc->register([
+    'tls_client_auth_subject_dn' => 'CN=my-client,O=Example,C=US',
+]);
+```
+
+### Example 9: Certificate-bound access tokens (RFC 8705 section 3)
+A certificate-bound access token can only be used by the client holding the private key, so a stolen
+token is useless on its own. Providers advertise this through
+`tls_client_certificate_bound_access_tokens` in their discovery document, which is picked up
+automatically; the token then carries a `cnf` claim with the `x5t#S256` thumbprint of the certificate.
+
+`verifyCertificateBinding()` checks that such a token is bound to the configured certificate. It
+returns `false` when the token is not bound at all and throws an `OIDCClientException` when it is
+bound to a different certificate:
+
+```php
+use Maicol07\OpenIDConnect\OIDCClientException;
+
+// Claims of an access token, or an introspection response
+$claims = $oidc->introspectToken($access_token);
+
+try {
+    if ($oidc->verifyCertificateBinding($claims)) {
+        // The token is bound to our certificate
+    }
+} catch (OIDCClientException $e) {
+    // The token is bound to a different certificate — do not use it
+}
+```
+
+Note that the authoritative check belongs to the resource server, which compares the thumbprint in
+the token against the certificate presented to it.
+
 ## Development Environments
 
-Sometimes you may need to disable SSL security on your development systems. You can do it by calling the `verify` method
-with the `false` parameter. Note: This is not recommended on production systems.
+Sometimes you may need to disable SSL security on your development systems. You can do it by setting `verify_ssl` to
+`false`. Note: This is not recommended on production systems.
+
+If you only need to trust a private CA or a self-signed provider certificate, use `cert_path` instead (see
+[Example 3](#example-3-network-and-security)): it keeps the connection verified. Note that `verify_ssl: false` only
+disables verification when no `cert_path` is set — a bundle given there is always honoured.
 
 ```php
 use Maicol07\OpenIDConnect\Client;
@@ -216,7 +314,6 @@ To run the tests, you need to have a running OpenID Connect provider
    - Web Origins: `*`
 3. Go to Credentials tab and copy the Secret
 4. Tweak the PHPStorm Run configuration with your settings.
-
 
 ### Todo
 - Dynamic registration does not support registration auth tokens and endpoints

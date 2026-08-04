@@ -22,5 +22,30 @@ enum ClientAuthMethod: string
     case CLIENT_SECRET_POST = 'client_secret_post';
     case CLIENT_SECRET_JWT = 'client_secret_jwt';
     case PRIVATE_KEY_JWT = 'private_key_jwt';
+
+    /**
+     * PKI mutual-TLS client authentication.
+     *
+     * @see https://tools.ietf.org/html/rfc8705#section-2.1
+     */
+    case TLS_CLIENT_AUTH = 'tls_client_auth';
+
+    /**
+     * Self-signed certificate mutual-TLS client authentication.
+     *
+     * @see https://tools.ietf.org/html/rfc8705#section-2.2
+     */
+    case SELF_SIGNED_TLS_CLIENT_AUTH = 'self_signed_tls_client_auth';
     case NONE = 'none';
+
+    /**
+     * Whether this method authenticates the client through the TLS layer
+     * rather than through a shared secret or an assertion.
+     *
+     * @see https://tools.ietf.org/html/rfc8705#section-2
+     */
+    public function isMutualTls(): bool
+    {
+        return $this === self::TLS_CLIENT_AUTH || $this === self::SELF_SIGNED_TLS_CLIENT_AUTH;
+    }
 }

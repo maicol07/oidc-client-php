@@ -32,7 +32,18 @@ trait DynamicRegistration
             ->put('redirect_uris', [$this->redirect_uri])
             ->put('client_name', $this->client_name);
 
-        $response = $this->client()->post($this->registration_endpoint, $data->all())->collect();
+        // Mutual-TLS client authentication and certificate-bound access tokens (RFC 8705)
+        $auth_method = $this->getClientAuthMethod();
+        if ($auth_method?->isMutualTls()) {
+            $data->put('token_endpoint_auth_method', $auth_method->value);
+        }
+        if ($this->tls_client_certificate_bound_access_tokens) {
+            $data->put('tls_client_certificate_bound_access_tokens', true);
+        }
+
+        $response = $this->client()
+            ->post($this->mtlsEndpoint('registration', $this->registration_endpoint), $data->all())
+            ->collect();
 
         $error = $response->get('error_description');
         if ($error) {
@@ -46,7 +57,8 @@ trait DynamicRegistration
         $secret = $response->get('client_secret');
         if ($secret) {
             $this->client_secret = $secret;
-        } else {
+        } elseif (!$auth_method?->isMutualTls()) {
+            // Mutual-TLS clients are authenticated by their certificate, so they have no secret
             throw new OIDCClientException('Error registering: Please contact the OpenID Connect provider
              and obtain a Client ID and Secret directly from them');
         }
