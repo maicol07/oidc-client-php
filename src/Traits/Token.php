@@ -92,7 +92,7 @@ trait Token
 
         $client = $this->client();
         // With mutual TLS the certificate authenticates the client, so no secret is sent
-        if ($this->usesMutualTlsClientAuth()) {
+        if ($this->applyMutualTlsClientAuth($data)) {
             $data['client_id'] = $client_id;
         } else {
             $client = $client->withBasicAuth($client_id, $client_secret);
@@ -127,7 +127,7 @@ trait Token
 
         $client = $this->client();
         // With mutual TLS the certificate authenticates the client, so no secret is sent
-        if ($this->usesMutualTlsClientAuth()) {
+        if ($this->applyMutualTlsClientAuth($data)) {
             $data['client_id'] = $client_id;
         } else {
             $client = $client->withBasicAuth($client_id, $client_secret);

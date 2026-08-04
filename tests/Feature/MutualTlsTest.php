@@ -51,11 +51,15 @@ test('certificate passphrase is carried into the guzzle options', function () {
 });
 
 test('certificate without a separate private key omits the ssl_key option', function () {
-    $bundle = tempnam(sys_get_temp_dir(), 'oidc_bundle_') . '.pem';
+    $bundle = tempnam(sys_get_temp_dir(), 'oidc_bundle_');
     file_put_contents($bundle, file_get_contents(certificate('client')->certificate_path)
         . file_get_contents(certificate('client')->private_key_path));
 
-    expect((new MutualTlsCertificate($bundle))->getRequestOptions())->toBe(['cert' => $bundle]);
+    try {
+        expect((new MutualTlsCertificate($bundle))->getRequestOptions())->toBe(['cert' => $bundle]);
+    } finally {
+        unlink($bundle);
+    }
 });
 
 test('certificate thumbprint is the base64url encoded sha-256 of the der body', function () {
@@ -73,11 +77,15 @@ test('certificate thumbprint is the base64url encoded sha-256 of the der body', 
 
 test('certificate thumbprint ignores a private key bundled with the certificate', function () {
     $certificate = certificate('client');
-    $bundle = tempnam(sys_get_temp_dir(), 'oidc_bundle_') . '.pem';
+    $bundle = tempnam(sys_get_temp_dir(), 'oidc_bundle_');
     file_put_contents($bundle, file_get_contents($certificate->certificate_path)
         . file_get_contents($certificate->private_key_path));
 
-    expect((new MutualTlsCertificate($bundle))->getThumbprint())->toBe($certificate->getThumbprint());
+    try {
+        expect((new MutualTlsCertificate($bundle))->getThumbprint())->toBe($certificate->getThumbprint());
+    } finally {
+        unlink($bundle);
+    }
 });
 
 test('certificate thumbprints differ between certificates', function () {
@@ -93,11 +101,15 @@ test('unreadable certificate and private key are rejected on construction', func
 });
 
 test('unparseable certificate is rejected when computing the thumbprint', function () {
-    $garbage = tempnam(sys_get_temp_dir(), 'oidc_garbage_') . '.pem';
+    $garbage = tempnam(sys_get_temp_dir(), 'oidc_garbage_');
     file_put_contents($garbage, 'not a certificate');
 
-    expect(fn () => (new MutualTlsCertificate($garbage))->getThumbprint())
-        ->toThrow(OIDCClientException::class, 'Unable to parse the client certificate');
+    try {
+        expect(fn () => (new MutualTlsCertificate($garbage))->getThumbprint())
+            ->toThrow(OIDCClientException::class, 'Unable to parse the client certificate');
+    } finally {
+        unlink($garbage);
+    }
 });
 
 test('mutual tls auth methods are recognised', function () {
@@ -156,7 +168,7 @@ test('no client secret is sent under mutual tls', function () {
 
     expect($this->invokeMethod(mtlsClient(), 'applyMutualTlsClientAuth', [&$data]))->toBeTrue()
         ->and($data)->not->toHaveKey('client_secret')
-        ->and($data['client_id'])->toBe('mtls-client');
+        ->and($data['client_id'] ?? null)->toBe('mtls-client');
 });
 
 test('a secret based client keeps its client secret', function () {

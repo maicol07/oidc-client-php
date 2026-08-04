@@ -65,8 +65,13 @@ trait MutualTls
             return null;
         }
 
+        // The supported methods are a public array, so a caller may well have passed method
+        // names as strings rather than enum cases.
         return collect($this->token_endpoint_auth_methods_supported)
-            ->first(static fn (ClientAuthMethod $method): bool => $method->isMutualTls());
+            ->map(static fn (mixed $method): ?ClientAuthMethod => $method instanceof ClientAuthMethod
+                ? $method
+                : (is_string($method) ? ClientAuthMethod::tryFrom($method) : null))
+            ->first(static fn (?ClientAuthMethod $method): bool => $method?->isMutualTls() === true);
     }
 
     /**

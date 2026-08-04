@@ -232,6 +232,22 @@ $oidc = new Client(
 );
 ```
 
+When registering a mutual-TLS client dynamically, `register()` sends `token_endpoint_auth_method`
+and `tls_client_certificate_bound_access_tokens` for you, but RFC 8705 asks for metadata that only
+you can supply. Pass it through the `register()` parameters, otherwise the provider will reject the
+registration with an opaque error:
+
+- `tls_client_auth` requires exactly one subject identifier, such as `tls_client_auth_subject_dn` or
+  `tls_client_auth_san_dns` ([section 2.1.2](https://tools.ietf.org/html/rfc8705#section-2.1.2))
+- `self_signed_tls_client_auth` requires `jwks` or `jwks_uri`
+  ([section 2.2.2](https://tools.ietf.org/html/rfc8705#section-2.2.2))
+
+```php
+$oidc->register([
+    'tls_client_auth_subject_dn' => 'CN=my-client,O=Example,C=US',
+]);
+```
+
 ### Example 9: Certificate-bound access tokens (RFC 8705 section 3)
 A certificate-bound access token can only be used by the client holding the private key, so a stolen
 token is useless on its own. Providers advertise this through

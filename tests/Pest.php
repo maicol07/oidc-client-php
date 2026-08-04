@@ -70,8 +70,21 @@ function certificate(string $name = 'client'): MutualTlsCertificate
 
     if (!isset($certificates[$name])) {
         $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        if ($key === false) {
+            throw new RuntimeException('Unable to generate a test key pair: ' . openssl_error_string());
+        }
+
         $csr = openssl_csr_new(['commonName' => $name], $key, ['digest_alg' => 'sha256']);
-        openssl_x509_export(openssl_csr_sign($csr, null, $key, 1, ['digest_alg' => 'sha256']), $certificate);
+        if ($csr === false) {
+            throw new RuntimeException('Unable to generate a test CSR: ' . openssl_error_string());
+        }
+
+        $signed = openssl_csr_sign($csr, null, $key, 1, ['digest_alg' => 'sha256']);
+        if ($signed === false) {
+            throw new RuntimeException('Unable to sign the test certificate: ' . openssl_error_string());
+        }
+
+        openssl_x509_export($signed, $certificate);
         openssl_pkey_export($key, $private_key);
 
         $directory = sys_get_temp_dir() . '/oidc-client-php-tests';
@@ -81,6 +94,7 @@ function certificate(string $name = 'client'): MutualTlsCertificate
 
         file_put_contents("$directory/$name.crt", $certificate);
         file_put_contents("$directory/$name.key", $private_key);
+        chmod("$directory/$name.key", 0600);
 
         $certificates[$name] = new MutualTlsCertificate("$directory/$name.crt", "$directory/$name.key");
     }

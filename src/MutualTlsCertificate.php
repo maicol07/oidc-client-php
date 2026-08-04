@@ -95,7 +95,7 @@ class MutualTlsCertificate
         // so hash the first certificate block only.
         $der = null;
         if (preg_match('/-----BEGIN CERTIFICATE-----(.+?)-----END CERTIFICATE-----/s', $contents, $matches)) {
-            $der = base64_decode(preg_replace('/\s+/', '', $matches[1]), true);
+            $der = base64_decode((string) preg_replace('/\s+/', '', $matches[1]), true);
         }
 
         if (empty($der)) {
