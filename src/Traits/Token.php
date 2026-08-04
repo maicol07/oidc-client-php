@@ -133,7 +133,10 @@ trait Token
             $client = $client->withBasicAuth($client_id, $client_secret);
         }
 
+        // RFC 7009 section 2.1 requires the revocation request to be form encoded; a JSON body
+        // leaves the provider unable to read client_id and it answers with invalid_client.
         return $client
+            ->asForm()
             ->acceptJson()
             ->post($this->mtlsEndpoint('revocation', $this->revocation_endpoint), $data)
             ->collect();
